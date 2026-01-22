@@ -46,9 +46,15 @@ async def analyze_cv_jd(
     - If score < 80: Returns match result only (REJECT)
     """
     try:
+        print(f"[DEBUG] Received CV file: {cv_file.filename}")
+        print(f"[DEBUG] JD text length: {len(jd_text) if jd_text else 0}")
+        print(f"[DEBUG] JD file name: {jd_file_name}")
+
         # Parse CV
         cv_bytes = await cv_file.read()
+        print(f"[DEBUG] CV bytes read: {len(cv_bytes)}")
         cv_text = parse_cv(file_bytes=cv_bytes, filename=cv_file.filename)
+        print(f"[DEBUG] CV text extracted: {len(cv_text)} chars")
 
         if not cv_text or len(cv_text.strip()) < 50:
             raise HTTPException(status_code=400, detail="Could not extract text from CV")
@@ -57,7 +63,9 @@ async def analyze_cv_jd(
         jd_input: JDInput = None
 
         if jd_text:
+            print(f"[DEBUG] Parsing JD text...")
             jd_input = parse_jd(jd_text)
+            print(f"[DEBUG] JD parsed: {jd_input.details.title}")
         elif jd_file_name:
             jd_file_path = JD_DIR / jd_file_name
             if not jd_file_path.exists():
@@ -88,24 +96,29 @@ async def analyze_cv_jd(
 
         # Generate MCQ test if score >= 80
         if match_result.score >= REJECT_THRESHOLD:
-            mcq_generator = get_mcq_generator()
+            try:
+                mcq_generator = get_mcq_generator()
 
-            # Extract skills from CV for MCQ
-            cv_skills = extract_skills_from_cv(cv_text)
+                # Extract skills from CV for MCQ
+                cv_skills = extract_skills_from_cv(cv_text)
 
-            mcq_test = await mcq_generator.generate_mcq_test(
-                jd_input=jd_input,
-                cv_skills=cv_skills,
-            )
+                mcq_test = await mcq_generator.generate_mcq_test(
+                    jd_input=jd_input,
+                    cv_skills=cv_skills,
+                )
 
-            # Store MCQ test for later evaluation (with correct answers)
-            session_id = f"{cv_file.filename}_{jd_input.details.title}"
-            _mcq_tests_cache[session_id] = mcq_test
+                # Store MCQ test for later evaluation (with correct answers)
+                session_id = f"{cv_file.filename}_{jd_input.details.title}"
+                _mcq_tests_cache[session_id] = mcq_test
 
-            # Return MCQ without correct answers
-            mcq_for_frontend = mcq_generator.get_mcq_for_frontend(mcq_test)
-            response_data["mcq_test"] = mcq_for_frontend
-            response_data["session_id"] = session_id
+                # Return MCQ without correct answers
+                mcq_for_frontend = mcq_generator.get_mcq_for_frontend(mcq_test)
+                response_data["mcq_test"] = mcq_for_frontend
+                response_data["session_id"] = session_id
+            except Exception as mcq_error:
+                # Log MCQ generation error but don't fail the request
+                print(f"MCQ generation failed: {mcq_error}")
+                response_data["mcq_error"] = "MCQ generation temporarily unavailable"
 
         return response_data
 

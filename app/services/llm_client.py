@@ -1,4 +1,5 @@
 import json
+import re
 import httpx
 from typing import Optional, Dict, Any
 
@@ -121,15 +122,20 @@ class LLMClient:
             cleaned = cleaned[:-3]
         cleaned = cleaned.strip()
 
+        # Sanitize JSON - remove invalid control characters
+        # Remove control characters except newline, tab, carriage return
+        cleaned = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', cleaned)
+
         try:
             return json.loads(cleaned)
         except json.JSONDecodeError as e:
-            # Try to extract JSON from the response
-            import re
+            # Try to extract JSON object from the response
             json_match = re.search(r'\{[\s\S]*\}', cleaned)
             if json_match:
                 try:
-                    return json.loads(json_match.group())
+                    extracted = json_match.group()
+                    extracted = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', extracted)
+                    return json.loads(extracted)
                 except json.JSONDecodeError:
                     pass
 
@@ -137,9 +143,19 @@ class LLMClient:
             array_match = re.search(r'\[[\s\S]*\]', cleaned)
             if array_match:
                 try:
-                    return json.loads(array_match.group())
+                    extracted = array_match.group()
+                    extracted = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', extracted)
+                    return json.loads(extracted)
                 except json.JSONDecodeError:
                     pass
+
+            # Last resort: try to fix common JSON issues
+            try:
+                # Replace unescaped newlines in strings
+                fixed = re.sub(r'(?<!\\)\n', '\\n', cleaned)
+                return json.loads(fixed)
+            except json.JSONDecodeError:
+                pass
 
             raise ValueError(f"Failed to parse JSON from LLM response: {e}\nResponse: {response_text[:500]}")
 

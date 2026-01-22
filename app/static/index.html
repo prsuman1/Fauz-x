@@ -27,29 +27,35 @@
 
         <!-- Input Section -->
         <div id="input-section" class="bg-white rounded-xl shadow-lg p-6 mb-8">
-            <h2 class="text-xl font-semibold mb-4 text-gray-700">Upload CV & Select JD</h2>
-
             <div class="grid md:grid-cols-2 gap-6">
-                <!-- JD Selection -->
+                <!-- JD Input (Text Area) -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Job Description</label>
-                    <select id="jd-select" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Loading JD files...</option>
-                    </select>
-                    <div id="jd-info" class="mt-2 text-sm text-gray-500"></div>
+                    <textarea id="jd-text" rows="12"
+                        class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                        placeholder='Paste JD in this format:
+
+JD Details
+{"icon": "Code", "title": "Frontend Developer", "skills": ["React.js", "JavaScript", "HTML/CSS"], "niceToHave": ["TypeScript", "Next.js"], "demandLevel": "High", "description": "Build modern web interfaces...", "responsibilities": ["Build components", "Integrate APIs"]}
+
+Capabilities
+["React Hooks", "State Management", "REST API Integration", "Git Operations"]'></textarea>
+                    <p class="mt-1 text-xs text-gray-500">Paste JD Details JSON + Capabilities JSON</p>
                 </div>
 
                 <!-- CV Upload -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Candidate CV</label>
-                    <div class="flex gap-2">
-                        <select id="cv-select" class="flex-1 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500">
-                            <option value="">Select from existing CVs...</option>
-                        </select>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors">
+                        <svg class="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                        <p class="text-gray-600 mb-2">Upload CV file</p>
+                        <p class="text-xs text-gray-400 mb-4">PDF, DOCX, or TXT</p>
+                        <input type="file" id="cv-upload" accept=".pdf,.docx,.txt"
+                               class="w-full border border-gray-300 rounded-lg p-2 text-sm">
                     </div>
-                    <div class="mt-2 text-center text-gray-400 text-sm">or</div>
-                    <input type="file" id="cv-upload" accept=".pdf,.docx,.txt"
-                           class="w-full mt-2 border border-gray-300 rounded-lg p-2 text-sm">
+                    <div id="cv-filename" class="mt-2 text-sm text-green-600 font-medium hidden"></div>
                 </div>
             </div>
 
@@ -186,64 +192,36 @@
         let currentSessionId = null;
         let mcqQuestions = [];
 
-        // Load JD and CV files on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            loadJDFiles();
-            loadCVFiles();
+        // Show filename when CV is selected
+        document.getElementById('cv-upload').addEventListener('change', function(e) {
+            const filenameDiv = document.getElementById('cv-filename');
+            if (e.target.files.length > 0) {
+                filenameDiv.textContent = 'Selected: ' + e.target.files[0].name;
+                filenameDiv.classList.remove('hidden');
+            } else {
+                filenameDiv.classList.add('hidden');
+            }
         });
 
-        async function loadJDFiles() {
-            try {
-                const response = await fetch('/api/jd-files');
-                const data = await response.json();
-                const select = document.getElementById('jd-select');
-                select.innerHTML = '<option value="">Select a Job Description...</option>';
-
-                data.jd_files.forEach(jd => {
-                    const option = document.createElement('option');
-                    option.value = jd.filename;
-                    option.textContent = `${jd.title} (${jd.skills_count} skills)`;
-                    select.appendChild(option);
-                });
-            } catch (error) {
-                console.error('Error loading JD files:', error);
-            }
-        }
-
-        async function loadCVFiles() {
-            try {
-                const response = await fetch('/api/cv-files');
-                const data = await response.json();
-                const select = document.getElementById('cv-select');
-                select.innerHTML = '<option value="">Select from existing CVs...</option>';
-
-                data.cv_files.forEach(cv => {
-                    const option = document.createElement('option');
-                    option.value = cv.filename;
-                    option.textContent = `${cv.filename} (${cv.size_kb} KB)`;
-                    select.appendChild(option);
-                });
-            } catch (error) {
-                console.error('Error loading CV files:', error);
-            }
-        }
-
         async function analyzeMatch() {
-            const jdSelect = document.getElementById('jd-select');
-            const cvSelect = document.getElementById('cv-select');
+            const jdText = document.getElementById('jd-text').value.trim();
             const cvUpload = document.getElementById('cv-upload');
-
-            const jdFilename = jdSelect.value;
-            const cvFilename = cvSelect.value;
             const cvFile = cvUpload.files[0];
 
-            if (!jdFilename) {
-                alert('Please select a Job Description');
+            // Validation
+            if (!jdText) {
+                alert('Please paste the Job Description');
                 return;
             }
 
-            if (!cvFilename && !cvFile) {
-                alert('Please select or upload a CV');
+            if (!cvFile) {
+                alert('Please upload a CV file');
+                return;
+            }
+
+            // Validate JD format
+            if (!jdText.includes('JD Details') || !jdText.includes('Capabilities')) {
+                alert('Invalid JD format. Please include both "JD Details" and "Capabilities" sections.');
                 return;
             }
 
@@ -252,29 +230,14 @@
             document.getElementById('loading-section').classList.remove('hidden');
 
             try {
-                let response;
+                const formData = new FormData();
+                formData.append('cv_file', cvFile);
+                formData.append('jd_text', jdText);
 
-                if (cvFilename) {
-                    // Use existing files
-                    const formData = new FormData();
-                    formData.append('cv_filename', cvFilename);
-                    formData.append('jd_filename', jdFilename);
-
-                    response = await fetch('/api/analyze-from-files', {
-                        method: 'POST',
-                        body: formData
-                    });
-                } else {
-                    // Upload CV file
-                    const formData = new FormData();
-                    formData.append('cv_file', cvFile);
-                    formData.append('jd_file_name', jdFilename);
-
-                    response = await fetch('/api/analyze', {
-                        method: 'POST',
-                        body: formData
-                    });
-                }
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
 
                 const data = await response.json();
 
@@ -493,9 +456,9 @@
             document.getElementById('input-section').classList.remove('hidden');
 
             // Reset form
-            document.getElementById('jd-select').value = '';
-            document.getElementById('cv-select').value = '';
+            document.getElementById('jd-text').value = '';
             document.getElementById('cv-upload').value = '';
+            document.getElementById('cv-filename').classList.add('hidden');
             document.getElementById('score-value').className = 'text-5xl font-bold';
 
             currentSessionId = null;

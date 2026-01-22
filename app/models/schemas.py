@@ -117,6 +117,21 @@ class MCQTest(BaseModel):
     questions: List[MCQQuestion]
 
 
+# MCQ Models for Frontend (without correct answers)
+class MCQQuestionForFrontend(BaseModel):
+    id: int
+    skill_tested: str
+    difficulty: str = "medium"
+    question: str
+    options: Dict[str, str]
+
+
+class MCQTestForFrontend(BaseModel):
+    total_questions: int
+    role_type: str
+    questions: List[MCQQuestionForFrontend]
+
+
 class MCQSubmission(BaseModel):
     answers: Dict[int, str]  # {question_id: selected_option}
 
@@ -140,6 +155,8 @@ class AnalyzeResponse(BaseModel):
     success: bool
     message: Optional[str] = None
     match_result: Optional[MatchResult] = None
-    mcq_test: Optional[MCQTest] = None  # Only present if score >= 80
+    mcq_test: Optional[MCQTestForFrontend] = None  # Only present if score >= 80
+    mcq_error: Optional[str] = None  # Error message if MCQ generation failed
+    session_id: Optional[str] = None  # For MCQ evaluation
     cv_filename: Optional[str] = None
     jd_title: Optional[str] = None

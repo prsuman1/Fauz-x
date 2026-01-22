@@ -1,6 +1,13 @@
 from typing import List, Dict, Any
 
-from app.models.schemas import MCQQuestion, MCQTest, MCQResult, JDInput
+from app.models.schemas import (
+    MCQQuestion,
+    MCQTest,
+    MCQResult,
+    JDInput,
+    MCQQuestionForFrontend,
+    MCQTestForFrontend,
+)
 from app.prompts import MCQ_SYSTEM_PROMPT, MCQ_USER_PROMPT
 from app.services.llm_client import get_llm_client
 from app.utils.jd_parser import get_role_type, get_all_skills_from_jd
@@ -135,7 +142,7 @@ class MCQGenerator:
             details=details,
         )
 
-    def get_mcq_for_frontend(self, mcq_test: MCQTest) -> Dict[str, Any]:
+    def get_mcq_for_frontend(self, mcq_test: MCQTest) -> MCQTestForFrontend:
         """
         Get MCQ test formatted for frontend (without correct answers).
 
@@ -143,24 +150,25 @@ class MCQGenerator:
             mcq_test: The MCQ test
 
         Returns:
-            Dict with questions (correct_answer hidden)
+            MCQTestForFrontend without correct_answer in questions
         """
         questions_for_frontend = []
         for q in mcq_test.questions:
-            questions_for_frontend.append({
-                "id": q.id,
-                "skill_tested": q.skill_tested,
-                "difficulty": q.difficulty,
-                "question": q.question,
-                "options": q.options,
-                # correct_answer is NOT included
-            })
+            questions_for_frontend.append(
+                MCQQuestionForFrontend(
+                    id=q.id,
+                    skill_tested=q.skill_tested,
+                    difficulty=q.difficulty,
+                    question=q.question,
+                    options=q.options,
+                )
+            )
 
-        return {
-            "total_questions": mcq_test.total_questions,
-            "role_type": mcq_test.role_type,
-            "questions": questions_for_frontend,
-        }
+        return MCQTestForFrontend(
+            total_questions=mcq_test.total_questions,
+            role_type=mcq_test.role_type,
+            questions=questions_for_frontend,
+        )
 
 
 # Singleton instance
