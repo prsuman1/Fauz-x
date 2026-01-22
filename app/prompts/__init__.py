@@ -1,0 +1,9 @@
+from .matching_prompt import MATCHING_SYSTEM_PROMPT, MATCHING_USER_PROMPT
+from .mcq_prompt import MCQ_SYSTEM_PROMPT, MCQ_USER_PROMPT
+
+__all__ = [
+    "MATCHING_SYSTEM_PROMPT",
+    "MATCHING_USER_PROMPT",
+    "MCQ_SYSTEM_PROMPT",
+    "MCQ_USER_PROMPT",
+]

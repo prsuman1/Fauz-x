@@ -1,0 +1,394 @@
+================================================================================
+FAUJX JD-CV MATCHING SYSTEM - DEVELOPMENT NOTES
+================================================================================
+Last Updated: January 9, 2026
+
+================================================================================
+PROJECT OVERVIEW
+================================================================================
+
+Platform: FaujX - Entry-level hiring platform (0-3 years experience)
+Purpose: AI-powered JD-CV matching and interview question generation
+Tech Stack: FastAPI + OpenRouter API (Claude 3 Haiku)
+
+Key Rule: Score 80+ = HIRE, Score <80 = REJECT
+
+================================================================================
+PROJECT STRUCTURE
+================================================================================
+
+JD-CV_Matching/
+├── app/
+│   ├── main.py              # FastAPI app entry point
+│   ├── config.py            # Environment configuration
+│   ├── routers/
+│   │   ├── matching.py      # POST /api/v1/jd-cv-match
+│   │   └── questions.py     # POST /api/v1/generate-questions
+│   ├── services/
+│   │   ├── openrouter_client.py  # LLM API client
+│   │   ├── jd_cv_matcher.py      # Matching logic
+│   │   ├── question_generator.py # Question generation
+│   │   └── csv_logger.py         # Logs results to CSV
+│   ├── models/
+│   │   ├── schemas.py            # JD-CV match schemas
+│   │   └── question_schemas.py   # Question gen schemas
+│   ├── prompts/
+│   │   ├── jd_cv_prompts.py      # JD-CV matching prompts (CRITICAL)
+│   │   └── question_gen_prompts.py
+│   ├── utils/
+│   │   ├── cv_parser.py          # PDF parsing (pdfplumber)
+│   │   └── jd_parser.py          # JD JSON parsing
+│   └── static/
+│       ├── landing.html          # Homepage
+│       ├── jd_cv_match.html      # JD-CV match UI
+│       └── question_gen.html     # Question generator UI
+├── data/
+│   └── logs/
+│       └── match_results.csv     # All match results logged here
+├── uploads/                      # Temporary CV uploads
+├── .env                          # API keys and config
+├── .env.example                  # Template for .env
+├── .gitignore
+├── requirements.txt
+├── README.md
+└── notes.txt                     # This file
+
+================================================================================
+KEY FEATURES
+================================================================================
+
+1. JD-CV MATCHING
+   - Upload CV (PDF) + paste JD details
+   - AI analyzes skill match, experience, domain alignment
+   - Returns score (0-100), grade, recommendation
+   - Logs all results to CSV
+
+2. QUESTION GENERATION
+   - Based on matched skills from JD-CV analysis
+   - Distribution: 0 Easy, 4 Medium, 4 Hard questions
+   - Each question shows which skill is being tested
+   - Multiple choice with explanations
+
+================================================================================
+SCORING SYSTEM
+================================================================================
+
+| Score   | Grade     | Recommendation | Action      |
+|---------|-----------|----------------|-------------|
+| 85-100  | EXCELLENT | STRONG_HIRE    | Hire        |
+| 80-84   | GOOD      | SHORTLIST      | Interview   |
+| 70-79   | MODERATE  | MAYBE          | Maybe       |
+| 55-69   | WEAK      | REJECT         | Reject      |
+| 0-54    | POOR      | REJECT         | Reject      |
+
+Scoring Formula (100 points):
+- Technical Skills Match: 55 points (PRIMARY)
+- Experience Relevance: 25 points
+- Domain Alignment: 20 points
+
+================================================================================
+CRITICAL: ANTI-HALLUCINATION RULES
+================================================================================
+
+The LLM was hallucinating skills (claiming AI/ML person had React/JS when they didn't).
+
+FIX IMPLEMENTED in jd_cv_prompts.py:
+
+1. STEP A: Extract ALL skills from CV first (list them explicitly)
+2. STEP B: List JD required skills
+3. STEP C: Match one-by-one with YES/NO verification
+4. STEP D: Calculate actual percentage
+
+RULES:
+- Python != JavaScript (different languages)
+- TensorFlow != React (ML vs UI library)
+- MongoDB != MySQL (different databases)
+- ONLY count skills EXPLICITLY mentioned in CV text
+
+EXAMPLE:
+- CV: [Python, SQL, TensorFlow, Keras]
+- JD: [React, JavaScript, HTML, CSS]
+- Result: 0% match (ZERO overlap) = Score 40-50
+
+================================================================================
+CHANGES LOG
+================================================================================
+
+SESSION: January 9, 2026 - MCQ BUTTON & API FIXES
+
+BUGS FIXED:
+
+1. MCQ Button Not Showing
+   - Problem: Button had display:none, JavaScript wasn't always showing it
+   - Fix:
+     * Moved button to prominent position (right below SHORTLIST badge)
+     * Removed display:none - button now always visible after results
+     * Button shows disabled with message when no matched skills
+   - File: app/static/jd_cv_match.html (lines 737-740)
+
+2. MCQ Generation API Error 500
+   - Problem: OpenRouter returning 500 error when generating questions
+   - Cause: Prompt too large + max_tokens too low (2000)
+   - Fix:
+     * Increased max_tokens from 2000 to 4000
+     * Simplified prompt template (removed 8 full examples, kept 1)
+   - Files:
+     * app/services/integrated_mcq_generator.py (line 69)
+     * app/prompts/integrated_mcq_prompts.py (lines 72-95)
+
+3. Missing Fields in API Response
+   - Problem: jd_cv_matcher.py wasn't passing all LLM fields to frontend
+   - Fix: Added missing fields:
+     * red_flags
+     * risk_assessment
+     * confidence_level
+     * onboarding_suggestions
+     * final_verdict
+   - File: app/services/jd_cv_matcher.py (lines 67-74)
+
+4. Schema Update
+   - Added domain_match field to ExperienceAnalysis model
+   - File: app/models/schemas.py (line 59)
+
+CURRENT STATUS:
+- JD-CV Matching: Working (Score 82 for AI/ML CV → AI/ML JD)
+- MCQ Button: Visible below SHORTLIST badge
+- MCQ Generation: Testing (fixed API error, needs verification)
+
+TO TEST TOMORROW:
+1. Run JD-CV match with AI/ML JD and CV
+2. Click "Generate Interview Questions" button
+3. Verify 8 MCQ questions are generated
+4. Check questions are for matched skills only
+
+---
+
+SESSION: January 8, 2026 (Part 3) - BUG FIXES
+
+BUGS FIXED:
+
+1. BUG: Model hallucinating JD requirements
+   - Problem: AI/ML JD was showing React/JS/CSS as "missing required" skills
+   - Cause: Prompt examples were all Frontend-focused, confusing the LLM
+   - Fix: Updated jd_cv_prompts.py with:
+     * Added AI/ML scoring examples alongside Frontend examples
+     * Added "STEP 0: IDENTIFY THE JOB TYPE" in evaluation process
+     * Added critical reminder to use ACTUAL JD skills, not examples
+     * Made examples role-agnostic
+
+2. BUG: Generate MCQ button not visible
+   - Problem: Button had display:none and JavaScript wasn't always showing it
+   - Cause: Button was hidden by default, relied on JS to show - could fail silently
+   - Fix: Changed approach in jd_cv_match.html:
+     * Button now always visible after results (removed display:none)
+     * Uses disabled state instead of hidden when no matched skills
+     * Shows "No Matched Skills - Cannot Generate Questions" when disabled
+     * Added missing fields to jd_cv_matcher.py (red_flags, risk_assessment, etc.)
+     * Added domain_match field to ExperienceAnalysis schema
+
+3. BUG: Wrong analysis context
+   - Problem: Summary mentioned "frontend and web development" for AI/ML role
+   - Fix: Fixed by fixing BUG 1 - model now reads actual JD
+
+RESULTS AFTER FIX:
+- AI/ML CV → AI/ML JD: Score 82 (was 55), Grade GOOD (was WEAK)
+- No more fake React/JS/CSS in missing skills
+- Summary now correctly describes AI/ML role fit
+
+---
+
+SESSION: January 8, 2026 (Part 2) - INTEGRATED MCQ GENERATION
+
+NEW FEATURE: Generate MCQ from JD-CV Match Results
+
+After completing JD-CV matching, users can now click "Generate Interview Questions"
+to get personalized MCQ questions based on the match analysis.
+
+Files Created:
+- app/prompts/integrated_mcq_prompts.py    # MCQ generation prompts
+- app/services/integrated_mcq_generator.py # MCQ generation service
+
+Files Modified:
+- app/routers/matching.py                  # Added /api/v1/generate-mcq-from-match endpoint
+- app/static/jd_cv_match.html              # Added MCQ button and question display UI
+- app/services/openrouter_client.py        # Fixed JSON parsing for control characters
+
+HOW IT WORKS:
+1. User performs JD-CV match as usual
+2. After results display, "Generate Interview Questions" button appears
+3. Click button → System takes match data (matched skills, JD, CV analysis)
+4. LLM generates 8 personalized questions:
+   - HARD questions for skills candidate claims to be strong in
+   - MEDIUM questions for other matched skills
+5. Questions display with:
+   - Skill being tested (e.g., "React.js", "JavaScript")
+   - Difficulty level (MEDIUM/HARD)
+   - Why this difficulty (e.g., "CV shows strong React experience")
+   - 4 options (A, B, C, D)
+   - Show Answer button with explanation
+
+API ENDPOINT:
+POST /api/v1/generate-mcq-from-match
+Body: {
+    "job_title": "Frontend Developer",
+    "jd_skills": ["React.js", "JavaScript", ...],
+    "cv_skills": ["React", "Node.js", ...],
+    "matched_skills": ["React.js", "JavaScript"],
+    "missing_skills": ["HTML5", "CSS3"],
+    "skill_match_pct": 60,
+    "strengths": ["Strong React experience"],
+    "interview_focus": ["CSS skills"]
+}
+
+---
+
+SESSION: January 8, 2026 (Part 1)
+
+1. QUESTION GENERATION UPDATE
+   - Changed from 3-3-2 (easy/medium/hard) to 0-4-4
+   - No easy questions, 4 medium, 4 hard
+   - Each question shows skill being tested
+   - Files: question_gen_prompts.py, question_schemas.py, question_gen.html
+
+2. LANDING PAGE UPDATE
+   - Question Generation: "Coming Soon" -> "Active"
+   - Button: "Learn More" -> "Start Generating"
+   - File: landing.html
+
+3. JD-CV MATCH OPTIMIZATION (50+ iterations)
+
+   Problem: All CVs scoring 82 regardless of fit
+
+   Round 1: Too lenient (86% scored GOOD)
+   Round 2: Too strict (everyone 50-60)
+   Round 3-5: Better spread but still issues
+
+   MAJOR FIX: Anti-hallucination rules
+   - AI/ML CV was getting 82 for Frontend JD (WRONG)
+   - Model claimed JavaScript, HTML, CSS skills that weren't in CV
+   - Added strict skill verification process
+
+   RESULTS AFTER FIX:
+   | Test Case              | Before | After |
+   |------------------------|--------|-------|
+   | AI/ML CV → Frontend JD | 82     | 52    |
+   | AI/ML CV → DevOps JD   | 82     | 55    |
+   | MERN CV → Frontend JD  | 82     | 82    |
+
+   Score range improved from 55-82 to 45-82
+
+4. MODEL TESTING
+   - Tested 5 models: Claude Haiku, Sonnet, GPT-4o-mini, Gemini, Llama
+   - All gave same results (issue was prompt, not model)
+   - Kept Claude 3 Haiku (fastest/cheapest)
+
+5. PROJECT CLEANUP
+   - Deleted: test files, sample PDFs, sample JDs
+   - Created: data/logs/, uploads/, .gitignore, README.md
+   - Moved: CSV logs to data/logs/match_results.csv
+   - Updated: .env for production (DEBUG=false)
+
+================================================================================
+TEST DATA LOCATION
+================================================================================
+
+test/
+├── 5 JD.csv              # 5 Job Descriptions (CSV format)
+│   ├── Frontend Developer
+│   ├── Backend Engineer
+│   ├── Fullstack Developer
+│   ├── AI/ML Engineer
+│   └── DevOps Engineer
+├── resumes/              # 10 Test CVs (PDF)
+│   └── *.pdf
+└── run_tests.py          # Test runner script
+
+HOW TO RUN TESTS:
+```bash
+# Full test (5 JDs x 4 CVs = 20 tests)
+python3 test/run_tests.py
+
+# Quick test (1 JD x 1 CV)
+python3 test/run_tests.py quick
+```
+
+ALWAYS USE THIS TEST DATA FOR TESTING CHANGES!
+
+================================================================================
+HOW TO RUN
+================================================================================
+
+1. Install dependencies:
+   pip install -r requirements.txt
+
+2. Set up .env (copy from .env.example):
+   OPENROUTER_API_KEY=your_key_here
+
+3. Start server:
+   uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+4. Access:
+   - Homepage: http://localhost:8000/
+   - JD-CV Match: http://localhost:8000/jd-cv-match
+   - Question Gen: http://localhost:8000/question-gen
+
+================================================================================
+API ENDPOINTS
+================================================================================
+
+POST /api/v1/jd-cv-match
+  - Form data: jd_details (JSON string), capabilities (JSON string)
+  - File: cv_file (PDF)
+  - Returns: match_score, match_grade, recommendation, skill_analysis
+
+POST /api/v1/generate-questions
+  - JSON body: skills[], job_title, difficulty_distribution
+  - Returns: questions[] with MCQ options
+
+================================================================================
+CSV LOG FORMAT (data/logs/match_results.csv)
+================================================================================
+
+Columns:
+- timestamp
+- job_title
+- cv_filename
+- match_score
+- match_grade
+- recommendation
+- skill_match_percentage
+- processing_time_ms
+- tokens_used
+- model_used
+- summary
+- result_json (full response)
+
+================================================================================
+IMPORTANT FILES TO MODIFY
+================================================================================
+
+1. Scoring Logic: app/prompts/jd_cv_prompts.py
+   - SYSTEM_PROMPT: Scoring rules, anti-hallucination
+   - USER_PROMPT_TEMPLATE: Evaluation steps
+
+2. Question Distribution: app/prompts/question_gen_prompts.py
+   - Change easy/medium/hard counts here
+
+3. Model Selection: .env
+   - DEFAULT_MODEL=anthropic/claude-3-haiku
+
+4. UI: app/static/*.html
+   - landing.html, jd_cv_match.html, question_gen.html
+
+================================================================================
+KNOWN ISSUES / FUTURE IMPROVEMENTS
+================================================================================
+
+1. AI/ML CV scoring 55 for AI_ML JD (should be higher - investigate)
+2. Consider adding batch processing for multiple CVs
+3. Add authentication for production
+4. Consider caching for repeated JD parsing
+
+================================================================================
+END OF NOTES
+================================================================================

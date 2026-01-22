@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FaujX JD-CV Matcher</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .grade-strong-hire { background: linear-gradient(135deg, #10b981, #059669); }
+        .grade-shortlist { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .grade-reject { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .loading { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+        .skill-tag { display: inline-block; padding: 2px 8px; margin: 2px; border-radius: 9999px; font-size: 12px; }
+        .skill-matched { background: #d1fae5; color: #065f46; }
+        .skill-missing { background: #fee2e2; color: #991b1b; }
+        .skill-extra { background: #dbeafe; color: #1e40af; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">FaujX JD-CV Matcher</h1>
+            <p class="text-gray-600">AI-Powered Entry-Level Talent Matching</p>
+        </header>
+
+        <!-- Input Section -->
+        <div id="input-section" class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">Upload CV & Select JD</h2>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- JD Selection -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Job Description</label>
+                    <select id="jd-select" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Loading JD files...</option>
+                    </select>
+                    <div id="jd-info" class="mt-2 text-sm text-gray-500"></div>
+                </div>
+
+                <!-- CV Upload -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Candidate CV</label>
+                    <div class="flex gap-2">
+                        <select id="cv-select" class="flex-1 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500">
+                            <option value="">Select from existing CVs...</option>
+                        </select>
+                    </div>
+                    <div class="mt-2 text-center text-gray-400 text-sm">or</div>
+                    <input type="file" id="cv-upload" accept=".pdf,.docx,.txt"
+                           class="w-full mt-2 border border-gray-300 rounded-lg p-2 text-sm">
+                </div>
+            </div>
+
+            <!-- Analyze Button -->
+            <div class="mt-6 text-center">
+                <button id="analyze-btn" onclick="analyzeMatch()"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Analyze Match
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading-section" class="hidden bg-white rounded-xl shadow-lg p-8 mb-8 text-center">
+            <div class="loading">
+                <svg class="w-16 h-16 mx-auto text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <p class="mt-4 text-lg text-gray-600">Analyzing CV against JD...</p>
+                <p class="text-sm text-gray-400">This may take a few moments</p>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results-section" class="hidden">
+            <!-- Score Card -->
+            <div id="score-card" class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <div class="flex items-center justify-between flex-wrap gap-4">
+                    <div>
+                        <h3 class="text-lg text-gray-500">Match Score</h3>
+                        <div class="flex items-baseline gap-3">
+                            <span id="score-value" class="text-5xl font-bold"></span>
+                            <span id="grade-badge" class="px-4 py-2 rounded-full text-white font-semibold"></span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm text-gray-500">CV: <span id="result-cv" class="font-medium text-gray-700"></span></p>
+                        <p class="text-sm text-gray-500">JD: <span id="result-jd" class="font-medium text-gray-700"></span></p>
+                    </div>
+                </div>
+                <p id="summary" class="mt-4 text-gray-600 border-t pt-4"></p>
+            </div>
+
+            <!-- Analytics Grid -->
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
+                <!-- Skills Analysis -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="font-semibold text-gray-700 mb-3">Skills Analysis</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">Matched Skills</p>
+                            <div id="matched-skills" class="flex flex-wrap"></div>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">Missing Skills</p>
+                            <div id="missing-skills" class="flex flex-wrap"></div>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">Additional Skills</p>
+                            <div id="additional-skills" class="flex flex-wrap"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Strengths & Gaps -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="font-semibold text-gray-700 mb-3">Strengths & Gaps</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <p class="text-sm text-green-600 font-medium mb-1">Strengths</p>
+                            <ul id="strengths-list" class="text-sm text-gray-600 list-disc list-inside"></ul>
+                        </div>
+                        <div>
+                            <p class="text-sm text-red-600 font-medium mb-1">Gaps</p>
+                            <ul id="gaps-list" class="text-sm text-gray-600 list-disc list-inside"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommendation -->
+            <div id="recommendation-card" class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <h3 class="font-semibold text-gray-700 mb-2">Recommendation</h3>
+                <p id="recommendation-reason" class="text-gray-600"></p>
+                <p id="final-verdict" class="mt-2 font-medium text-gray-800"></p>
+            </div>
+        </div>
+
+        <!-- MCQ Section -->
+        <div id="mcq-section" class="hidden">
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-gray-700">Technical Assessment</h2>
+                    <span id="mcq-info" class="text-sm text-gray-500"></span>
+                </div>
+
+                <div id="mcq-questions" class="space-y-6"></div>
+
+                <div class="mt-6 text-center">
+                    <button id="submit-mcq-btn" onclick="submitMCQ()"
+                            class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg transition duration-200">
+                        Submit Answers
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MCQ Results -->
+        <div id="mcq-results-section" class="hidden">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Assessment Results</h2>
+
+                <div class="flex items-center gap-4 mb-6">
+                    <div id="mcq-score-circle" class="w-24 h-24 rounded-full flex items-center justify-center text-white text-2xl font-bold"></div>
+                    <div>
+                        <p id="mcq-score-text" class="text-lg"></p>
+                        <p id="mcq-pass-status" class="font-semibold"></p>
+                    </div>
+                </div>
+
+                <div id="mcq-details" class="space-y-4"></div>
+            </div>
+        </div>
+
+        <!-- Reset Button -->
+        <div id="reset-section" class="hidden text-center mt-6">
+            <button onclick="resetForm()" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg">
+                Analyze Another
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let currentSessionId = null;
+        let mcqQuestions = [];
+
+        // Load JD and CV files on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadJDFiles();
+            loadCVFiles();
+        });
+
+        async function loadJDFiles() {
+            try {
+                const response = await fetch('/api/jd-files');
+                const data = await response.json();
+                const select = document.getElementById('jd-select');
+                select.innerHTML = '<option value="">Select a Job Description...</option>';
+
+                data.jd_files.forEach(jd => {
+                    const option = document.createElement('option');
+                    option.value = jd.filename;
+                    option.textContent = `${jd.title} (${jd.skills_count} skills)`;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading JD files:', error);
+            }
+        }
+
+        async function loadCVFiles() {
+            try {
+                const response = await fetch('/api/cv-files');
+                const data = await response.json();
+                const select = document.getElementById('cv-select');
+                select.innerHTML = '<option value="">Select from existing CVs...</option>';
+
+                data.cv_files.forEach(cv => {
+                    const option = document.createElement('option');
+                    option.value = cv.filename;
+                    option.textContent = `${cv.filename} (${cv.size_kb} KB)`;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading CV files:', error);
+            }
+        }
+
+        async function analyzeMatch() {
+            const jdSelect = document.getElementById('jd-select');
+            const cvSelect = document.getElementById('cv-select');
+            const cvUpload = document.getElementById('cv-upload');
+
+            const jdFilename = jdSelect.value;
+            const cvFilename = cvSelect.value;
+            const cvFile = cvUpload.files[0];
+
+            if (!jdFilename) {
+                alert('Please select a Job Description');
+                return;
+            }
+
+            if (!cvFilename && !cvFile) {
+                alert('Please select or upload a CV');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('input-section').classList.add('hidden');
+            document.getElementById('loading-section').classList.remove('hidden');
+
+            try {
+                let response;
+
+                if (cvFilename) {
+                    // Use existing files
+                    const formData = new FormData();
+                    formData.append('cv_filename', cvFilename);
+                    formData.append('jd_filename', jdFilename);
+
+                    response = await fetch('/api/analyze-from-files', {
+                        method: 'POST',
+                        body: formData
+                    });
+                } else {
+                    // Upload CV file
+                    const formData = new FormData();
+                    formData.append('cv_file', cvFile);
+                    formData.append('jd_file_name', jdFilename);
+
+                    response = await fetch('/api/analyze', {
+                        method: 'POST',
+                        body: formData
+                    });
+                }
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Analysis failed');
+                }
+
+                displayResults(data);
+
+            } catch (error) {
+                alert('Error: ' + error.message);
+                document.getElementById('loading-section').classList.add('hidden');
+                document.getElementById('input-section').classList.remove('hidden');
+            }
+        }
+
+        function displayResults(data) {
+            document.getElementById('loading-section').classList.add('hidden');
+            document.getElementById('results-section').classList.remove('hidden');
+            document.getElementById('reset-section').classList.remove('hidden');
+
+            const result = data.match_result;
+
+            // Score and Grade
+            document.getElementById('score-value').textContent = result.score;
+
+            const gradeBadge = document.getElementById('grade-badge');
+            gradeBadge.textContent = result.grade;
+            gradeBadge.className = 'px-4 py-2 rounded-full text-white font-semibold ';
+            if (result.grade === 'STRONG_HIRE') {
+                gradeBadge.classList.add('grade-strong-hire');
+                document.getElementById('score-value').classList.add('text-green-600');
+            } else if (result.grade === 'SHORTLIST') {
+                gradeBadge.classList.add('grade-shortlist');
+                document.getElementById('score-value').classList.add('text-blue-600');
+            } else {
+                gradeBadge.classList.add('grade-reject');
+                document.getElementById('score-value').classList.add('text-red-600');
+            }
+
+            // CV and JD info
+            document.getElementById('result-cv').textContent = data.cv_filename;
+            document.getElementById('result-jd').textContent = data.jd_title;
+            document.getElementById('summary').textContent = result.summary;
+
+            // Skills
+            displaySkills('matched-skills', result.skill_analysis.matched_required, 'skill-matched');
+            displaySkills('missing-skills', result.skill_analysis.missing_required, 'skill-missing');
+            displaySkills('additional-skills', result.skill_analysis.additional_relevant, 'skill-extra');
+
+            // Strengths and Gaps
+            displayList('strengths-list', result.strengths);
+            displayList('gaps-list', result.gaps);
+
+            // Recommendation
+            document.getElementById('recommendation-reason').textContent = result.recommendation_reason;
+            document.getElementById('final-verdict').textContent = result.final_verdict;
+
+            // MCQ Test (if available)
+            if (data.mcq_test && data.session_id) {
+                currentSessionId = data.session_id;
+                mcqQuestions = data.mcq_test.questions;
+                displayMCQTest(data.mcq_test);
+            }
+        }
+
+        function displaySkills(elementId, skills, className) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = '';
+
+            if (!skills || skills.length === 0) {
+                container.innerHTML = '<span class="text-gray-400 text-sm">None</span>';
+                return;
+            }
+
+            skills.forEach(skill => {
+                const span = document.createElement('span');
+                span.className = `skill-tag ${className}`;
+                span.textContent = skill;
+                container.appendChild(span);
+            });
+        }
+
+        function displayList(elementId, items) {
+            const list = document.getElementById(elementId);
+            list.innerHTML = '';
+
+            if (!items || items.length === 0) {
+                list.innerHTML = '<li class="text-gray-400">None</li>';
+                return;
+            }
+
+            items.forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = item;
+                list.appendChild(li);
+            });
+        }
+
+        function displayMCQTest(mcqTest) {
+            document.getElementById('mcq-section').classList.remove('hidden');
+            document.getElementById('mcq-info').textContent = `${mcqTest.total_questions} Questions | ${mcqTest.role_type.toUpperCase()}`;
+
+            const container = document.getElementById('mcq-questions');
+            container.innerHTML = '';
+
+            mcqTest.questions.forEach((q, index) => {
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'border rounded-lg p-4 bg-gray-50';
+                questionDiv.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-sm text-gray-500">Q${index + 1}</span>
+                        <span class="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">${q.skill_tested}</span>
+                    </div>
+                    <p class="font-medium text-gray-800 mb-3">${q.question}</p>
+                    <div class="space-y-2">
+                        ${Object.entries(q.options).map(([key, value]) => `
+                            <label class="flex items-center p-2 rounded border hover:bg-white cursor-pointer">
+                                <input type="radio" name="q${q.id}" value="${key}" class="mr-3">
+                                <span><strong>${key}.</strong> ${value}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                `;
+                container.appendChild(questionDiv);
+            });
+        }
+
+        async function submitMCQ() {
+            // Collect answers
+            const answers = {};
+            mcqQuestions.forEach(q => {
+                const selected = document.querySelector(`input[name="q${q.id}"]:checked`);
+                if (selected) {
+                    answers[q.id] = selected.value;
+                }
+            });
+
+            // Check if all questions answered
+            if (Object.keys(answers).length < mcqQuestions.length) {
+                if (!confirm(`You have answered ${Object.keys(answers).length} of ${mcqQuestions.length} questions. Submit anyway?`)) {
+                    return;
+                }
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('session_id', currentSessionId);
+                formData.append('answers', JSON.stringify(answers));
+
+                const response = await fetch('/api/evaluate-mcq', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Evaluation failed');
+                }
+
+                displayMCQResults(data.result);
+
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        function displayMCQResults(result) {
+            document.getElementById('mcq-section').classList.add('hidden');
+            document.getElementById('mcq-results-section').classList.remove('hidden');
+
+            // Score circle
+            const scoreCircle = document.getElementById('mcq-score-circle');
+            scoreCircle.textContent = `${Math.round(result.score_percentage)}%`;
+            scoreCircle.className = 'w-24 h-24 rounded-full flex items-center justify-center text-white text-2xl font-bold ' +
+                (result.passed ? 'bg-green-500' : 'bg-red-500');
+
+            // Score text
+            document.getElementById('mcq-score-text').textContent =
+                `${result.correct_answers} correct out of ${result.total_questions}`;
+
+            const passStatus = document.getElementById('mcq-pass-status');
+            passStatus.textContent = result.passed ? 'PASSED' : 'FAILED';
+            passStatus.className = 'font-semibold ' + (result.passed ? 'text-green-600' : 'text-red-600');
+
+            // Details
+            const detailsContainer = document.getElementById('mcq-details');
+            detailsContainer.innerHTML = '';
+
+            result.details.forEach((detail, index) => {
+                const div = document.createElement('div');
+                div.className = `p-3 rounded border ${detail.is_correct ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`;
+                div.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <span class="font-medium">Q${index + 1}: ${detail.skill_tested}</span>
+                        <span class="${detail.is_correct ? 'text-green-600' : 'text-red-600'}">
+                            ${detail.is_correct ? '✓ Correct' : '✗ Wrong'}
+                        </span>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-1">${detail.question}</p>
+                    <p class="text-sm mt-1">
+                        Your answer: <strong>${detail.user_answer || 'Not answered'}</strong>
+                        ${!detail.is_correct ? ` | Correct: <strong>${detail.correct_answer}</strong>` : ''}
+                    </p>
+                `;
+                detailsContainer.appendChild(div);
+            });
+        }
+
+        function resetForm() {
+            document.getElementById('results-section').classList.add('hidden');
+            document.getElementById('mcq-section').classList.add('hidden');
+            document.getElementById('mcq-results-section').classList.add('hidden');
+            document.getElementById('reset-section').classList.add('hidden');
+            document.getElementById('input-section').classList.remove('hidden');
+
+            // Reset form
+            document.getElementById('jd-select').value = '';
+            document.getElementById('cv-select').value = '';
+            document.getElementById('cv-upload').value = '';
+            document.getElementById('score-value').className = 'text-5xl font-bold';
+
+            currentSessionId = null;
+            mcqQuestions = [];
+        }
+    </script>
+</body>
+</html>
