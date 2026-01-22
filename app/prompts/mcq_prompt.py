@@ -55,9 +55,8 @@ Add 2-3 fundamental questions based on the role type, even if not in CV/JD:
 - Questions should test understanding, not just memory
 
 ### 4. Difficulty Distribution
-- Easy (30%): Basic concepts, definitions
 - Medium (50%): Application of concepts, common scenarios
-- Hard (20%): Edge cases, best practices, optimization
+- Hard (50%): Edge cases, best practices, optimization, advanced concepts
 
 ### 5. Question Quality
 - Clear, unambiguous wording
@@ -87,7 +86,7 @@ Candidate's Skills from CV: {cv_skills}
 1. Generate minimum 10 MCQ questions
 2. Cover ALL skills listed above
 3. Add 2-3 role-based fundamental questions for {role_type}
-4. Mix difficulty levels (30% easy, 50% medium, 20% hard)
+4. Mix difficulty levels (50% medium, 50% hard) - NO easy questions
 5. Each question tests a specific skill
 
 ### Return this EXACT JSON structure:
