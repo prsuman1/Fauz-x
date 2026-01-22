@@ -23,6 +23,7 @@
         <header class="text-center mb-8">
             <h1 class="text-4xl font-bold text-gray-800 mb-2">FaujX JD-CV Matcher</h1>
             <p class="text-gray-600">AI-Powered Entry-Level Talent Matching</p>
+            <p class="text-xs text-gray-400 mt-1">Using Separate Endpoints: /api/match + /api/generate-mcq</p>
         </header>
 
         <!-- Input Section -->
@@ -74,8 +75,8 @@ Capabilities
                 <svg class="w-16 h-16 mx-auto text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
-                <p class="mt-4 text-lg text-gray-600">Analyzing CV against JD...</p>
-                <p class="text-sm text-gray-400">This may take a few moments</p>
+                <p id="loading-text" class="mt-4 text-lg text-gray-600">Analyzing CV against JD...</p>
+                <p id="loading-subtext" class="text-sm text-gray-400">Step 1: Running match analysis</p>
             </div>
         </div>
 
@@ -144,6 +145,17 @@ Capabilities
             </div>
         </div>
 
+        <!-- MCQ Loading State -->
+        <div id="mcq-loading-section" class="hidden bg-white rounded-xl shadow-lg p-8 mb-8 text-center">
+            <div class="loading">
+                <svg class="w-12 h-12 mx-auto text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+                <p class="mt-4 text-lg text-gray-600">Generating MCQ Test...</p>
+                <p class="text-sm text-gray-400">Creating 15 questions based on skills</p>
+            </div>
+        </div>
+
         <!-- MCQ Section -->
         <div id="mcq-section" class="hidden">
             <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
@@ -191,6 +203,8 @@ Capabilities
     <script>
         let currentSessionId = null;
         let mcqQuestions = [];
+        let currentJdText = '';
+        let currentCvFile = null;
 
         // Show filename when CV is selected
         document.getElementById('cv-upload').addEventListener('change', function(e) {
@@ -225,27 +239,71 @@ Capabilities
                 return;
             }
 
+            // Store for later use in MCQ generation
+            currentJdText = jdText;
+            currentCvFile = cvFile;
+
             // Show loading
             document.getElementById('input-section').classList.add('hidden');
             document.getElementById('loading-section').classList.remove('hidden');
+            document.getElementById('loading-text').textContent = 'Analyzing CV against JD...';
+            document.getElementById('loading-subtext').textContent = 'Step 1: Running match analysis (calling /api/match)';
 
             try {
-                const formData = new FormData();
-                formData.append('cv_file', cvFile);
-                formData.append('jd_text', jdText);
+                // STEP 1: Call /api/match endpoint
+                const matchFormData = new FormData();
+                matchFormData.append('cv_file', cvFile);
+                matchFormData.append('jd_text', jdText);
 
-                const response = await fetch('/api/analyze', {
+                const matchResponse = await fetch('/api/match', {
                     method: 'POST',
-                    body: formData
+                    body: matchFormData
                 });
 
-                const data = await response.json();
+                const matchData = await matchResponse.json();
 
-                if (!response.ok) {
-                    throw new Error(data.detail || 'Analysis failed');
+                if (!matchResponse.ok) {
+                    throw new Error(matchData.detail || 'Match analysis failed');
                 }
 
-                displayResults(data);
+                // Display match results
+                displayMatchResults(matchData);
+
+                // STEP 2: If score >= 87, call /api/generate-mcq
+                if (matchData.match_result.score >= 87) {
+                    document.getElementById('loading-section').classList.remove('hidden');
+                    document.getElementById('loading-text').textContent = 'Generating MCQ Test...';
+                    document.getElementById('loading-subtext').textContent = 'Step 2: Creating 15 questions (calling /api/generate-mcq)';
+
+                    // Need to re-read the file since it was consumed
+                    const cvUploadAgain = document.getElementById('cv-upload');
+                    const cvFileAgain = cvUploadAgain.files[0];
+
+                    const mcqFormData = new FormData();
+                    mcqFormData.append('cv_file', cvFileAgain);
+                    mcqFormData.append('jd_text', jdText);
+
+                    const mcqResponse = await fetch('/api/generate-mcq', {
+                        method: 'POST',
+                        body: mcqFormData
+                    });
+
+                    const mcqData = await mcqResponse.json();
+
+                    document.getElementById('loading-section').classList.add('hidden');
+
+                    if (mcqResponse.ok && mcqData.mcq_test) {
+                        currentSessionId = mcqData.session_id;
+                        mcqQuestions = mcqData.mcq_test.questions;
+                        displayMCQTest(mcqData.mcq_test);
+                    } else {
+                        console.error('MCQ generation failed:', mcqData);
+                        // Show error but don't fail completely
+                        alert('MCQ generation failed. Match results are still available.');
+                    }
+                } else {
+                    document.getElementById('loading-section').classList.add('hidden');
+                }
 
             } catch (error) {
                 alert('Error: ' + error.message);
@@ -254,7 +312,7 @@ Capabilities
             }
         }
 
-        function displayResults(data) {
+        function displayMatchResults(data) {
             document.getElementById('loading-section').classList.add('hidden');
             document.getElementById('results-section').classList.remove('hidden');
             document.getElementById('reset-section').classList.remove('hidden');
@@ -295,13 +353,6 @@ Capabilities
             // Recommendation
             document.getElementById('recommendation-reason').textContent = result.recommendation_reason;
             document.getElementById('final-verdict').textContent = result.final_verdict;
-
-            // MCQ Test (if available)
-            if (data.mcq_test && data.session_id) {
-                currentSessionId = data.session_id;
-                mcqQuestions = data.mcq_test.questions;
-                displayMCQTest(data.mcq_test);
-            }
         }
 
         function displaySkills(elementId, skills, className) {
@@ -350,7 +401,10 @@ Capabilities
                 questionDiv.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
                         <span class="text-sm text-gray-500">Q${index + 1}</span>
-                        <span class="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">${q.skill_tested}</span>
+                        <div class="flex gap-2">
+                            <span class="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded">${q.difficulty}</span>
+                            <span class="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">${q.skill_tested}</span>
+                        </div>
                     </div>
                     <p class="font-medium text-gray-800 mb-3">${q.question}</p>
                     <div class="space-y-2">
@@ -463,6 +517,8 @@ Capabilities
 
             currentSessionId = null;
             mcqQuestions = [];
+            currentJdText = '';
+            currentCvFile = null;
         }
     </script>
 </body>

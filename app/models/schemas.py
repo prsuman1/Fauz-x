@@ -160,3 +160,46 @@ class AnalyzeResponse(BaseModel):
     session_id: Optional[str] = None  # For MCQ evaluation
     cv_filename: Optional[str] = None
     jd_title: Optional[str] = None
+
+
+# Separate Endpoint Response Models
+class MatchOnlyResponse(BaseModel):
+    """Response for /api/match endpoint (match only, no MCQ)"""
+    success: bool
+    message: Optional[str] = None
+    match_result: Optional[MatchResult] = None
+    cv_filename: Optional[str] = None
+    jd_title: Optional[str] = None
+
+
+class GenerateMCQResponse(BaseModel):
+    """Response for /api/generate-mcq endpoint"""
+    success: bool
+    message: Optional[str] = None
+    mcq_test: Optional[MCQTestForFrontend] = None
+    session_id: Optional[str] = None
+    jd_title: Optional[str] = None
+    cv_filename: Optional[str] = None
+
+
+class MCQAnswersResponse(BaseModel):
+    """Response for /api/get-mcq-answers endpoint"""
+    success: bool
+    session_id: str
+    answers: Dict[int, str]  # {question_id: correct_answer}
+
+
+class SessionInfo(BaseModel):
+    """Response for /api/session-info endpoint"""
+    session_id: str
+    created_at: str
+    jd_title: Optional[str] = None
+    cv_filename: Optional[str] = None
+    question_count: int
+    role_type: Optional[str] = None
+
+
+class SessionListResponse(BaseModel):
+    """Response for listing sessions"""
+    success: bool
+    sessions: List[SessionInfo]

@@ -3,7 +3,7 @@ MCQ_SYSTEM_PROMPT = """You are a technical assessment expert at FaujX. Your job 
 ## MCQ GENERATION RULES
 
 ### 1. Question Coverage
-- Generate MINIMUM 10 questions, no maximum limit
+- Generate EXACTLY 15 questions (no more, no less)
 - Cover ALL skills from both CV and JD
 - Each skill should have at least 1 question
 - Important/primary skills should have 2 questions
@@ -83,7 +83,7 @@ Candidate's Skills from CV: {cv_skills}
 {all_skills}
 
 ### Instructions
-1. Generate minimum 10 MCQ questions
+1. Generate EXACTLY 15 MCQ questions
 2. Cover ALL skills listed above
 3. Add 2-3 role-based fundamental questions for {role_type}
 4. Mix difficulty levels (50% medium, 50% hard) - NO easy questions

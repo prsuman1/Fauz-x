@@ -128,11 +128,11 @@ class Matcher:
 
     def _determine_grade(self, score: int) -> MatchGrade:
         """Determine the grade based on score using updated thresholds."""
-        if score >= SHORTLIST_THRESHOLD:  # 90+
+        if score >= SHORTLIST_THRESHOLD:  # 95+ = MUST HIRE
             return MatchGrade.STRONG_HIRE
-        elif score >= REJECT_THRESHOLD:  # 80-89
+        elif score >= REJECT_THRESHOLD:  # 87-94 = SHORTLIST
             return MatchGrade.SHORTLIST
-        else:  # <80
+        else:  # <87 = REJECT
             return MatchGrade.REJECT
 
     def _map_recommendation(self, grade: MatchGrade) -> str:

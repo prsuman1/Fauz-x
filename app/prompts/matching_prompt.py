@@ -53,14 +53,14 @@ Examples:
 
 | Score | Grade | Meaning | Action |
 |-------|-------|---------|--------|
-| 90-100 | STRONG_HIRE | Excellent match, hire-ready | Show reasons + MCQ Test |
-| 80-89 | SHORTLIST | Good match, worth interviewing | Show reasons + MCQ Test |
-| 0-79 | REJECT | Not a good fit | Show reasons only, NO MCQ |
+| 95-100 | STRONG_HIRE | Must Hire, excellent match | Show reasons + MCQ Test |
+| 87-94 | SHORTLIST | Good match, worth interviewing | Show reasons + MCQ Test |
+| 0-86 | REJECT | Not a good fit | Show reasons only, NO MCQ |
 
 ## RECOMMENDATION RULES (UPDATED)
-- **STRONG_HIRE**: Score 90+ (Top candidates)
-- **SHORTLIST**: Score 80-89 (Worth testing)
-- **REJECT**: Score <80 (Don't proceed)
+- **STRONG_HIRE**: Score 95+ (Must Hire - Top candidates)
+- **SHORTLIST**: Score 87-94 (Worth testing)
+- **REJECT**: Score <87 (Don't proceed)
 
 ## KEY PRINCIPLES
 
