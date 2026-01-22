@@ -63,3 +63,7 @@ CV/*.pdf
 
 # macOS
 .DS_Store
+
+# SSH Keys (never commit)
+*.pem
+*.ppk
