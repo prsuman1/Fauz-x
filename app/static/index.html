@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FaujX JD-CV Matcher</title>
+    <title>FaujX AI Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .grade-strong-hire { background: linear-gradient(135deg, #10b981, #059669); }
@@ -15,198 +15,383 @@
         .skill-matched { background: #d1fae5; color: #065f46; }
         .skill-missing { background: #fee2e2; color: #991b1b; }
         .skill-extra { background: #dbeafe; color: #1e40af; }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .card-disabled { opacity: 0.6; cursor: not-allowed; }
+        .capability-tag { display: inline-block; padding: 4px 12px; margin: 4px; border-radius: 9999px; font-size: 13px; background: #e0f2fe; color: #0369a1; }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
     <div class="container mx-auto px-4 py-8 max-w-6xl">
-        <!-- Header -->
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-800 mb-2">FaujX JD-CV Matcher</h1>
-            <p class="text-gray-600">AI-Powered Entry-Level Talent Matching</p>
-            <p class="text-xs text-gray-400 mt-1">Using Separate Endpoints: /api/match + /api/generate-mcq</p>
-        </header>
 
-        <!-- Input Section -->
-        <div id="input-section" class="bg-white rounded-xl shadow-lg p-6 mb-8">
-            <div class="grid md:grid-cols-2 gap-6">
-                <!-- JD Input (Text Area) -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Job Description</label>
-                    <textarea id="jd-text" rows="12"
-                        class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
-                        placeholder='Paste JD in this format:
+        <!-- ==================== HOME SECTION ==================== -->
+        <div id="home-section">
+            <!-- Header -->
+            <header class="text-center mb-12">
+                <h1 class="text-4xl font-bold text-gray-800 mb-2">FaujX AI Platform</h1>
+                <p class="text-gray-600">AI-Powered Recruitment & Assessment Tools</p>
+            </header>
 
-JD Details
-{"icon": "Code", "title": "Frontend Developer", "skills": ["React.js", "JavaScript", "HTML/CSS"], "niceToHave": ["TypeScript", "Next.js"], "demandLevel": "High", "description": "Build modern web interfaces...", "responsibilities": ["Build components", "Integrate APIs"]}
+            <!-- Cards Grid -->
+            <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
 
-Capabilities
-["React Hooks", "State Management", "REST API Integration", "Git Operations"]'></textarea>
-                    <p class="mt-1 text-xs text-gray-500">Paste JD Details JSON + Capabilities JSON</p>
+                <!-- Card 1: CV-Matching -->
+                <div onclick="navigateTo('cv-matching')"
+                     class="bg-white rounded-2xl shadow-lg p-8 cursor-pointer card-hover border-2 border-transparent hover:border-blue-500">
+                    <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-6">
+                        <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-3">CV-Matching & MCQ</h3>
+                    <p class="text-gray-600 text-sm mb-4">Match candidate CVs against job descriptions with AI-powered analysis and auto-generated MCQ tests.</p>
+                    <div class="flex items-center text-blue-600 font-medium text-sm">
+                        <span>Get Started</span>
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </div>
                 </div>
 
-                <!-- CV Upload -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Candidate CV</label>
-                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors">
-                        <svg class="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                <!-- Card 2: Find Capabilities -->
+                <div onclick="navigateTo('find-capabilities')"
+                     class="bg-white rounded-2xl shadow-lg p-8 cursor-pointer card-hover border-2 border-transparent hover:border-green-500">
+                    <div class="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mb-6">
+                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
                         </svg>
-                        <p class="text-gray-600 mb-2">Upload CV file</p>
-                        <p class="text-xs text-gray-400 mb-4">PDF, DOCX, or TXT</p>
-                        <input type="file" id="cv-upload" accept=".pdf,.docx,.txt"
-                               class="w-full border border-gray-300 rounded-lg p-2 text-sm">
                     </div>
-                    <div id="cv-filename" class="mt-2 text-sm text-green-600 font-medium hidden"></div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-3">Find Capabilities</h3>
+                    <p class="text-gray-600 text-sm mb-4">Generate role-specific capabilities from job description details using AI analysis.</p>
+                    <div class="flex items-center text-green-600 font-medium text-sm">
+                        <span>Generate Now</span>
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Card 3: Code Check -->
+                <div class="bg-white rounded-2xl shadow-lg p-8 card-disabled border-2 border-transparent">
+                    <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-6">
+                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-3">Code Check</h3>
+                    <p class="text-gray-600 text-sm mb-4">Evaluate candidate coding skills with AI-powered code review and assessment.</p>
+                    <div class="flex items-center text-gray-400 font-medium text-sm">
+                        <span>Coming Soon</span>
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
                 </div>
             </div>
 
-            <!-- Analyze Button -->
-            <div class="mt-6 text-center">
-                <button id="analyze-btn" onclick="analyzeMatch()"
-                        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                    Analyze Match
+            <!-- Footer -->
+            <div class="text-center mt-12 text-gray-400 text-sm">
+                <p>Powered by AI | FaujX Recruitment Platform</p>
+            </div>
+        </div>
+
+        <!-- ==================== CV-MATCHING SECTION ==================== -->
+        <div id="cv-matching-section" class="hidden">
+            <!-- Back Button & Header -->
+            <div class="flex items-center mb-6">
+                <button onclick="navigateTo('home')" class="flex items-center text-gray-600 hover:text-blue-600 mr-4">
+                    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back
+                </button>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800">CV-Matching & MCQ</h1>
+                    <p class="text-gray-500 text-sm">Match CVs against JDs with AI analysis</p>
+                </div>
+            </div>
+
+            <!-- Input Section -->
+            <div id="input-section" class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <!-- JD Input -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Job Description</label>
+                        <textarea id="jd-text" rows="12"
+                            class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                            placeholder='Paste JD in this format:
+
+JD Details
+{"icon": "Code", "title": "Frontend Developer", "skills": ["React.js", "JavaScript"], "niceToHave": ["TypeScript"], "demandLevel": "High", "description": "Build modern web interfaces...", "responsibilities": ["Build components", "Integrate APIs"]}
+
+Capabilities
+["React Hooks", "State Management", "REST API Integration"]'></textarea>
+                        <p class="mt-1 text-xs text-gray-500">Paste JD Details JSON + Capabilities JSON</p>
+                    </div>
+
+                    <!-- CV Upload -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Candidate CV</label>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors">
+                            <svg class="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            <p class="text-gray-600 mb-2">Upload CV file</p>
+                            <p class="text-xs text-gray-400 mb-4">PDF, DOCX, or TXT</p>
+                            <input type="file" id="cv-upload" accept=".pdf,.docx,.txt"
+                                   class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+                        </div>
+                        <div id="cv-filename" class="mt-2 text-sm text-green-600 font-medium hidden"></div>
+                    </div>
+                </div>
+
+                <!-- Analyze Button -->
+                <div class="mt-6 text-center">
+                    <button id="analyze-btn" onclick="analyzeMatch()"
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Analyze Match
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading-section" class="hidden bg-white rounded-xl shadow-lg p-8 mb-8 text-center">
+                <div class="loading">
+                    <svg class="w-16 h-16 mx-auto text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <p id="loading-text" class="mt-4 text-lg text-gray-600">Analyzing CV against JD...</p>
+                    <p id="loading-subtext" class="text-sm text-gray-400">Step 1: Running match analysis</p>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="results-section" class="hidden">
+                <!-- Score Card -->
+                <div id="score-card" class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                    <div class="flex items-center justify-between flex-wrap gap-4">
+                        <div>
+                            <h3 class="text-lg text-gray-500">Match Score</h3>
+                            <div class="flex items-baseline gap-3">
+                                <span id="score-value" class="text-5xl font-bold"></span>
+                                <span id="grade-badge" class="px-4 py-2 rounded-full text-white font-semibold"></span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-gray-500">CV: <span id="result-cv" class="font-medium text-gray-700"></span></p>
+                            <p class="text-sm text-gray-500">JD: <span id="result-jd" class="font-medium text-gray-700"></span></p>
+                        </div>
+                    </div>
+                    <p id="summary" class="mt-4 text-gray-600 border-t pt-4"></p>
+                </div>
+
+                <!-- Analytics Grid -->
+                <div class="grid md:grid-cols-2 gap-6 mb-6">
+                    <!-- Skills Analysis -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="font-semibold text-gray-700 mb-3">Skills Analysis</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">Matched Skills</p>
+                                <div id="matched-skills" class="flex flex-wrap"></div>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">Missing Skills</p>
+                                <div id="missing-skills" class="flex flex-wrap"></div>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">Additional Skills</p>
+                                <div id="additional-skills" class="flex flex-wrap"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Strengths & Gaps -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="font-semibold text-gray-700 mb-3">Strengths & Gaps</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <p class="text-sm text-green-600 font-medium mb-1">Strengths</p>
+                                <ul id="strengths-list" class="text-sm text-gray-600 list-disc list-inside"></ul>
+                            </div>
+                            <div>
+                                <p class="text-sm text-red-600 font-medium mb-1">Gaps</p>
+                                <ul id="gaps-list" class="text-sm text-gray-600 list-disc list-inside"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recommendation -->
+                <div id="recommendation-card" class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                    <h3 class="font-semibold text-gray-700 mb-2">Recommendation</h3>
+                    <p id="recommendation-reason" class="text-gray-600"></p>
+                    <p id="final-verdict" class="mt-2 font-medium text-gray-800"></p>
+                </div>
+            </div>
+
+            <!-- MCQ Loading State -->
+            <div id="mcq-loading-section" class="hidden bg-white rounded-xl shadow-lg p-8 mb-8 text-center">
+                <div class="loading">
+                    <svg class="w-12 h-12 mx-auto text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                    <p class="mt-4 text-lg text-gray-600">Generating MCQ Test...</p>
+                    <p class="text-sm text-gray-400">Creating 15 questions based on skills</p>
+                </div>
+            </div>
+
+            <!-- MCQ Section -->
+            <div id="mcq-section" class="hidden">
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold text-gray-700">Technical Assessment</h2>
+                        <span id="mcq-info" class="text-sm text-gray-500"></span>
+                    </div>
+                    <div id="mcq-questions" class="space-y-6"></div>
+                    <div class="mt-6 text-center">
+                        <button id="submit-mcq-btn" onclick="submitMCQ()"
+                                class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg transition duration-200">
+                            Submit Answers
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MCQ Results -->
+            <div id="mcq-results-section" class="hidden">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Assessment Results</h2>
+                    <div class="flex items-center gap-4 mb-6">
+                        <div id="mcq-score-circle" class="w-24 h-24 rounded-full flex items-center justify-center text-white text-2xl font-bold"></div>
+                        <div>
+                            <p id="mcq-score-text" class="text-lg"></p>
+                            <p id="mcq-pass-status" class="font-semibold"></p>
+                        </div>
+                    </div>
+                    <div id="mcq-details" class="space-y-4"></div>
+                </div>
+            </div>
+
+            <!-- Reset Button -->
+            <div id="reset-section" class="hidden text-center mt-6">
+                <button onclick="resetMatchingForm()" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg">
+                    Analyze Another
                 </button>
             </div>
         </div>
 
-        <!-- Loading State -->
-        <div id="loading-section" class="hidden bg-white rounded-xl shadow-lg p-8 mb-8 text-center">
-            <div class="loading">
-                <svg class="w-16 h-16 mx-auto text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <p id="loading-text" class="mt-4 text-lg text-gray-600">Analyzing CV against JD...</p>
-                <p id="loading-subtext" class="text-sm text-gray-400">Step 1: Running match analysis</p>
-            </div>
-        </div>
-
-        <!-- Results Section -->
-        <div id="results-section" class="hidden">
-            <!-- Score Card -->
-            <div id="score-card" class="bg-white rounded-xl shadow-lg p-6 mb-6">
-                <div class="flex items-center justify-between flex-wrap gap-4">
-                    <div>
-                        <h3 class="text-lg text-gray-500">Match Score</h3>
-                        <div class="flex items-baseline gap-3">
-                            <span id="score-value" class="text-5xl font-bold"></span>
-                            <span id="grade-badge" class="px-4 py-2 rounded-full text-white font-semibold"></span>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-sm text-gray-500">CV: <span id="result-cv" class="font-medium text-gray-700"></span></p>
-                        <p class="text-sm text-gray-500">JD: <span id="result-jd" class="font-medium text-gray-700"></span></p>
-                    </div>
-                </div>
-                <p id="summary" class="mt-4 text-gray-600 border-t pt-4"></p>
-            </div>
-
-            <!-- Analytics Grid -->
-            <div class="grid md:grid-cols-2 gap-6 mb-6">
-                <!-- Skills Analysis -->
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <h3 class="font-semibold text-gray-700 mb-3">Skills Analysis</h3>
-                    <div class="space-y-3">
-                        <div>
-                            <p class="text-sm text-gray-500 mb-1">Matched Skills</p>
-                            <div id="matched-skills" class="flex flex-wrap"></div>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500 mb-1">Missing Skills</p>
-                            <div id="missing-skills" class="flex flex-wrap"></div>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500 mb-1">Additional Skills</p>
-                            <div id="additional-skills" class="flex flex-wrap"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Strengths & Gaps -->
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <h3 class="font-semibold text-gray-700 mb-3">Strengths & Gaps</h3>
-                    <div class="space-y-3">
-                        <div>
-                            <p class="text-sm text-green-600 font-medium mb-1">Strengths</p>
-                            <ul id="strengths-list" class="text-sm text-gray-600 list-disc list-inside"></ul>
-                        </div>
-                        <div>
-                            <p class="text-sm text-red-600 font-medium mb-1">Gaps</p>
-                            <ul id="gaps-list" class="text-sm text-gray-600 list-disc list-inside"></ul>
-                        </div>
-                    </div>
+        <!-- ==================== FIND CAPABILITIES SECTION ==================== -->
+        <div id="find-capabilities-section" class="hidden">
+            <!-- Back Button & Header -->
+            <div class="flex items-center mb-6">
+                <button onclick="navigateTo('home')" class="flex items-center text-gray-600 hover:text-green-600 mr-4">
+                    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back
+                </button>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800">Find Capabilities</h1>
+                    <p class="text-gray-500 text-sm">Generate role-specific capabilities from JD details</p>
                 </div>
             </div>
 
-            <!-- Recommendation -->
-            <div id="recommendation-card" class="bg-white rounded-xl shadow-lg p-6 mb-6">
-                <h3 class="font-semibold text-gray-700 mb-2">Recommendation</h3>
-                <p id="recommendation-reason" class="text-gray-600"></p>
-                <p id="final-verdict" class="mt-2 font-medium text-gray-800"></p>
-            </div>
-        </div>
-
-        <!-- MCQ Loading State -->
-        <div id="mcq-loading-section" class="hidden bg-white rounded-xl shadow-lg p-8 mb-8 text-center">
-            <div class="loading">
-                <svg class="w-12 h-12 mx-auto text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                </svg>
-                <p class="mt-4 text-lg text-gray-600">Generating MCQ Test...</p>
-                <p class="text-sm text-gray-400">Creating 15 questions based on skills</p>
-            </div>
-        </div>
-
-        <!-- MCQ Section -->
-        <div id="mcq-section" class="hidden">
-            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-semibold text-gray-700">Technical Assessment</h2>
-                    <span id="mcq-info" class="text-sm text-gray-500"></span>
+            <!-- Input Section -->
+            <div id="capabilities-input-section" class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">JD Details (JSON)</label>
+                    <textarea id="jd-details-input" rows="10"
+                        class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 font-mono text-sm"
+                        placeholder='{
+    "icon": "Code",
+    "title": "Backend Developer",
+    "skills": ["Node.js", "Express.js", "MongoDB", "REST APIs"],
+    "niceToHave": ["GraphQL", "Redis", "Docker"],
+    "demandLevel": "High",
+    "description": "Build scalable backend services...",
+    "responsibilities": ["Design APIs", "Manage databases", "Write tests"]
+}'></textarea>
+                    <p class="mt-1 text-xs text-gray-500">Paste JD Details JSON only (without Capabilities)</p>
                 </div>
 
-                <div id="mcq-questions" class="space-y-6"></div>
-
+                <!-- Generate Button -->
                 <div class="mt-6 text-center">
-                    <button id="submit-mcq-btn" onclick="submitMCQ()"
-                            class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg transition duration-200">
-                        Submit Answers
+                    <button id="generate-capabilities-btn" onclick="generateCapabilities()"
+                            class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Generate Capabilities
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="capabilities-loading" class="hidden bg-white rounded-xl shadow-lg p-8 mb-8 text-center">
+                <div class="loading">
+                    <svg class="w-16 h-16 mx-auto text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                    </svg>
+                    <p class="mt-4 text-lg text-gray-600">Generating Capabilities...</p>
+                    <p class="text-sm text-gray-400">AI is analyzing the job requirements</p>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="capabilities-results" class="hidden">
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-semibold text-gray-700">Generated Capabilities</h3>
+                        <span id="capabilities-role-type" class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium"></span>
+                    </div>
+                    <p class="text-sm text-gray-500 mb-4">Role: <span id="capabilities-jd-title" class="font-medium text-gray-700"></span></p>
+
+                    <!-- Capabilities Tags -->
+                    <div id="capabilities-list" class="mb-6"></div>
+
+                    <!-- JSON Output -->
+                    <div class="mt-6 pt-4 border-t">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="text-sm font-medium text-gray-700">JSON Output (Copy to use in CV-Matching)</label>
+                            <button onclick="copyCapabilitiesJSON()" class="text-sm text-green-600 hover:text-green-700 font-medium">
+                                Copy JSON
+                            </button>
+                        </div>
+                        <pre id="capabilities-json" class="bg-gray-100 p-4 rounded-lg text-sm font-mono overflow-x-auto"></pre>
+                    </div>
+                </div>
+
+                <!-- Reset Button -->
+                <div class="text-center">
+                    <button onclick="resetCapabilitiesForm()" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg">
+                        Generate Another
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- MCQ Results -->
-        <div id="mcq-results-section" class="hidden">
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <h2 class="text-xl font-semibold text-gray-700 mb-4">Assessment Results</h2>
-
-                <div class="flex items-center gap-4 mb-6">
-                    <div id="mcq-score-circle" class="w-24 h-24 rounded-full flex items-center justify-center text-white text-2xl font-bold"></div>
-                    <div>
-                        <p id="mcq-score-text" class="text-lg"></p>
-                        <p id="mcq-pass-status" class="font-semibold"></p>
-                    </div>
-                </div>
-
-                <div id="mcq-details" class="space-y-4"></div>
-            </div>
-        </div>
-
-        <!-- Reset Button -->
-        <div id="reset-section" class="hidden text-center mt-6">
-            <button onclick="resetForm()" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg">
-                Analyze Another
-            </button>
-        </div>
     </div>
 
     <script>
+        // ==================== NAVIGATION ====================
+        function navigateTo(section) {
+            // Hide all sections
+            document.getElementById('home-section').classList.add('hidden');
+            document.getElementById('cv-matching-section').classList.add('hidden');
+            document.getElementById('find-capabilities-section').classList.add('hidden');
+
+            // Show target section
+            if (section === 'home') {
+                document.getElementById('home-section').classList.remove('hidden');
+            } else if (section === 'cv-matching') {
+                document.getElementById('cv-matching-section').classList.remove('hidden');
+            } else if (section === 'find-capabilities') {
+                document.getElementById('find-capabilities-section').classList.remove('hidden');
+            }
+        }
+
+        // ==================== CV-MATCHING LOGIC ====================
         let currentSessionId = null;
         let mcqQuestions = [];
-        let currentJdText = '';
-        let currentCvFile = null;
 
-        // Show filename when CV is selected
         document.getElementById('cv-upload').addEventListener('change', function(e) {
             const filenameDiv = document.getElementById('cv-filename');
             if (e.target.files.length > 0) {
@@ -222,35 +407,25 @@ Capabilities
             const cvUpload = document.getElementById('cv-upload');
             const cvFile = cvUpload.files[0];
 
-            // Validation
             if (!jdText) {
                 alert('Please paste the Job Description');
                 return;
             }
-
             if (!cvFile) {
                 alert('Please upload a CV file');
                 return;
             }
-
-            // Validate JD format
             if (!jdText.includes('JD Details') || !jdText.includes('Capabilities')) {
                 alert('Invalid JD format. Please include both "JD Details" and "Capabilities" sections.');
                 return;
             }
 
-            // Store for later use in MCQ generation
-            currentJdText = jdText;
-            currentCvFile = cvFile;
-
-            // Show loading
             document.getElementById('input-section').classList.add('hidden');
             document.getElementById('loading-section').classList.remove('hidden');
             document.getElementById('loading-text').textContent = 'Analyzing CV against JD...';
-            document.getElementById('loading-subtext').textContent = 'Step 1: Running match analysis (calling /api/match)';
+            document.getElementById('loading-subtext').textContent = 'Step 1: Running match analysis';
 
             try {
-                // STEP 1: Call /api/match endpoint
                 const matchFormData = new FormData();
                 matchFormData.append('cv_file', cvFile);
                 matchFormData.append('jd_text', jdText);
@@ -266,19 +441,14 @@ Capabilities
                     throw new Error(matchData.detail || 'Match analysis failed');
                 }
 
-                // Display match results
                 displayMatchResults(matchData);
 
-                // STEP 2: If score >= 87, call /api/generate-mcq
                 if (matchData.match_result.score >= 87) {
                     document.getElementById('loading-section').classList.remove('hidden');
                     document.getElementById('loading-text').textContent = 'Generating MCQ Test...';
-                    document.getElementById('loading-subtext').textContent = 'Step 2: Creating 15 questions (calling /api/generate-mcq)';
+                    document.getElementById('loading-subtext').textContent = 'Step 2: Creating 15 questions';
 
-                    // Need to re-read the file since it was consumed
-                    const cvUploadAgain = document.getElementById('cv-upload');
-                    const cvFileAgain = cvUploadAgain.files[0];
-
+                    const cvFileAgain = document.getElementById('cv-upload').files[0];
                     const mcqFormData = new FormData();
                     mcqFormData.append('cv_file', cvFileAgain);
                     mcqFormData.append('jd_text', jdText);
@@ -289,7 +459,6 @@ Capabilities
                     });
 
                     const mcqData = await mcqResponse.json();
-
                     document.getElementById('loading-section').classList.add('hidden');
 
                     if (mcqResponse.ok && mcqData.mcq_test) {
@@ -298,7 +467,6 @@ Capabilities
                         displayMCQTest(mcqData.mcq_test);
                     } else {
                         console.error('MCQ generation failed:', mcqData);
-                        // Show error but don't fail completely
                         alert('MCQ generation failed. Match results are still available.');
                     }
                 } else {
@@ -319,7 +487,6 @@ Capabilities
 
             const result = data.match_result;
 
-            // Score and Grade
             document.getElementById('score-value').textContent = result.score;
 
             const gradeBadge = document.getElementById('grade-badge');
@@ -336,21 +503,17 @@ Capabilities
                 document.getElementById('score-value').classList.add('text-red-600');
             }
 
-            // CV and JD info
             document.getElementById('result-cv').textContent = data.cv_filename;
             document.getElementById('result-jd').textContent = data.jd_title;
             document.getElementById('summary').textContent = result.summary;
 
-            // Skills
             displaySkills('matched-skills', result.skill_analysis.matched_required, 'skill-matched');
             displaySkills('missing-skills', result.skill_analysis.missing_required, 'skill-missing');
             displaySkills('additional-skills', result.skill_analysis.additional_relevant, 'skill-extra');
 
-            // Strengths and Gaps
             displayList('strengths-list', result.strengths);
             displayList('gaps-list', result.gaps);
 
-            // Recommendation
             document.getElementById('recommendation-reason').textContent = result.recommendation_reason;
             document.getElementById('final-verdict').textContent = result.final_verdict;
         }
@@ -358,12 +521,10 @@ Capabilities
         function displaySkills(elementId, skills, className) {
             const container = document.getElementById(elementId);
             container.innerHTML = '';
-
             if (!skills || skills.length === 0) {
                 container.innerHTML = '<span class="text-gray-400 text-sm">None</span>';
                 return;
             }
-
             skills.forEach(skill => {
                 const span = document.createElement('span');
                 span.className = `skill-tag ${className}`;
@@ -375,12 +536,10 @@ Capabilities
         function displayList(elementId, items) {
             const list = document.getElementById(elementId);
             list.innerHTML = '';
-
             if (!items || items.length === 0) {
                 list.innerHTML = '<li class="text-gray-400">None</li>';
                 return;
             }
-
             items.forEach(item => {
                 const li = document.createElement('li');
                 li.textContent = item;
@@ -421,7 +580,6 @@ Capabilities
         }
 
         async function submitMCQ() {
-            // Collect answers
             const answers = {};
             mcqQuestions.forEach(q => {
                 const selected = document.querySelector(`input[name="q${q.id}"]:checked`);
@@ -430,7 +588,6 @@ Capabilities
                 }
             });
 
-            // Check if all questions answered
             if (Object.keys(answers).length < mcqQuestions.length) {
                 if (!confirm(`You have answered ${Object.keys(answers).length} of ${mcqQuestions.length} questions. Submit anyway?`)) {
                     return;
@@ -464,13 +621,11 @@ Capabilities
             document.getElementById('mcq-section').classList.add('hidden');
             document.getElementById('mcq-results-section').classList.remove('hidden');
 
-            // Score circle
             const scoreCircle = document.getElementById('mcq-score-circle');
             scoreCircle.textContent = `${Math.round(result.score_percentage)}%`;
             scoreCircle.className = 'w-24 h-24 rounded-full flex items-center justify-center text-white text-2xl font-bold ' +
                 (result.passed ? 'bg-green-500' : 'bg-red-500');
 
-            // Score text
             document.getElementById('mcq-score-text').textContent =
                 `${result.correct_answers} correct out of ${result.total_questions}`;
 
@@ -478,7 +633,6 @@ Capabilities
             passStatus.textContent = result.passed ? 'PASSED' : 'FAILED';
             passStatus.className = 'font-semibold ' + (result.passed ? 'text-green-600' : 'text-red-600');
 
-            // Details
             const detailsContainer = document.getElementById('mcq-details');
             detailsContainer.innerHTML = '';
 
@@ -502,14 +656,13 @@ Capabilities
             });
         }
 
-        function resetForm() {
+        function resetMatchingForm() {
             document.getElementById('results-section').classList.add('hidden');
             document.getElementById('mcq-section').classList.add('hidden');
             document.getElementById('mcq-results-section').classList.add('hidden');
             document.getElementById('reset-section').classList.add('hidden');
             document.getElementById('input-section').classList.remove('hidden');
 
-            // Reset form
             document.getElementById('jd-text').value = '';
             document.getElementById('cv-upload').value = '';
             document.getElementById('cv-filename').classList.add('hidden');
@@ -517,8 +670,96 @@ Capabilities
 
             currentSessionId = null;
             mcqQuestions = [];
-            currentJdText = '';
-            currentCvFile = null;
+        }
+
+        // ==================== FIND CAPABILITIES LOGIC ====================
+        let generatedCapabilities = [];
+
+        async function generateCapabilities() {
+            const jdDetailsInput = document.getElementById('jd-details-input').value.trim();
+
+            if (!jdDetailsInput) {
+                alert('Please paste the JD Details JSON');
+                return;
+            }
+
+            // Validate JSON
+            let jdDetails;
+            try {
+                jdDetails = JSON.parse(jdDetailsInput);
+            } catch (e) {
+                alert('Invalid JSON format. Please check your input.');
+                return;
+            }
+
+            if (!jdDetails.title || !jdDetails.skills) {
+                alert('JD Details must include at least "title" and "skills" fields');
+                return;
+            }
+
+            document.getElementById('capabilities-input-section').classList.add('hidden');
+            document.getElementById('capabilities-loading').classList.remove('hidden');
+
+            try {
+                const response = await fetch('/api/generate-capabilities', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ jd_details: jdDetails })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Capabilities generation failed');
+                }
+
+                generatedCapabilities = data.capabilities;
+                displayCapabilitiesResults(data);
+
+            } catch (error) {
+                alert('Error: ' + error.message);
+                document.getElementById('capabilities-loading').classList.add('hidden');
+                document.getElementById('capabilities-input-section').classList.remove('hidden');
+            }
+        }
+
+        function displayCapabilitiesResults(data) {
+            document.getElementById('capabilities-loading').classList.add('hidden');
+            document.getElementById('capabilities-results').classList.remove('hidden');
+
+            document.getElementById('capabilities-jd-title').textContent = data.jd_title;
+            document.getElementById('capabilities-role-type').textContent = data.role_type || 'General';
+
+            // Display capability tags
+            const listContainer = document.getElementById('capabilities-list');
+            listContainer.innerHTML = '';
+            data.capabilities.forEach(cap => {
+                const span = document.createElement('span');
+                span.className = 'capability-tag';
+                span.textContent = cap;
+                listContainer.appendChild(span);
+            });
+
+            // Display JSON
+            document.getElementById('capabilities-json').textContent = JSON.stringify(data.capabilities, null, 2);
+        }
+
+        function copyCapabilitiesJSON() {
+            const jsonText = JSON.stringify(generatedCapabilities);
+            navigator.clipboard.writeText(jsonText).then(() => {
+                alert('Capabilities JSON copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
+        }
+
+        function resetCapabilitiesForm() {
+            document.getElementById('capabilities-results').classList.add('hidden');
+            document.getElementById('capabilities-input-section').classList.remove('hidden');
+            document.getElementById('jd-details-input').value = '';
+            generatedCapabilities = [];
         }
     </script>
 </body>

@@ -203,3 +203,29 @@ class SessionListResponse(BaseModel):
     """Response for listing sessions"""
     success: bool
     sessions: List[SessionInfo]
+
+
+# Capabilities Generation Models
+class JDDetailsForCapabilities(BaseModel):
+    """JD Details input for capabilities generation (without capabilities)"""
+    icon: Optional[str] = None
+    title: str
+    skills: List[str]
+    niceToHave: Optional[List[str]] = []
+    demandLevel: Optional[str] = None
+    description: Optional[str] = ""
+    responsibilities: Optional[List[str]] = []
+
+
+class GenerateCapabilitiesRequest(BaseModel):
+    """Request for /api/generate-capabilities endpoint"""
+    jd_details: JDDetailsForCapabilities
+
+
+class GenerateCapabilitiesResponse(BaseModel):
+    """Response for /api/generate-capabilities endpoint"""
+    success: bool
+    message: Optional[str] = None
+    jd_title: str
+    role_type: str
+    capabilities: List[str]

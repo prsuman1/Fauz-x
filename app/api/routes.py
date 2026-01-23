@@ -18,12 +18,15 @@ from app.models.schemas import (
     MCQAnswersResponse,
     SessionInfo,
     JDInput,
+    GenerateCapabilitiesRequest,
+    GenerateCapabilitiesResponse,
 )
 from app.utils.cv_parser import parse_cv, extract_skills_from_cv
 from app.utils.jd_parser import parse_jd, parse_jd_file
 from app.services.matcher import get_matcher
 from app.services.mcq_generator import get_mcq_generator
 from app.services.logger import get_logger
+from app.services.capabilities_generator import get_capabilities_generator
 
 router = APIRouter()
 
@@ -65,6 +68,35 @@ def _store_session(
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "service": "FaujX JD-CV Matcher"}
+
+
+# ====================
+# Generate Capabilities Endpoint
+# ====================
+
+@router.post("/generate-capabilities", response_model=GenerateCapabilitiesResponse)
+async def generate_capabilities(request: GenerateCapabilitiesRequest):
+    """
+    Generate capabilities from JD Details using AI.
+
+    Takes JD Details JSON (title, skills, niceToHave, description, responsibilities)
+    and generates a comprehensive list of testable capabilities.
+    """
+    try:
+        generator = get_capabilities_generator()
+        result = await generator.generate_capabilities(request.jd_details)
+
+        return GenerateCapabilitiesResponse(
+            success=True,
+            jd_title=result["jd_title"],
+            role_type=result["role_type"],
+            capabilities=result["capabilities"],
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Capabilities generation failed: {str(e)}")
 
 
 # ====================
