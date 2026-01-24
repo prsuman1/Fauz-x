@@ -20,6 +20,8 @@ from app.models.schemas import (
     JDInput,
     GenerateCapabilitiesRequest,
     GenerateCapabilitiesResponse,
+    EvaluateCodeRequest,
+    EvaluateCodeResponse,
 )
 from app.utils.cv_parser import parse_cv, extract_skills_from_cv
 from app.utils.jd_parser import parse_jd, parse_jd_file
@@ -27,6 +29,7 @@ from app.services.matcher import get_matcher
 from app.services.mcq_generator import get_mcq_generator
 from app.services.logger import get_logger
 from app.services.capabilities_generator import get_capabilities_generator
+from app.services.code_evaluator import get_code_evaluator
 
 router = APIRouter()
 
@@ -97,6 +100,35 @@ async def generate_capabilities(request: GenerateCapabilitiesRequest):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Capabilities generation failed: {str(e)}")
+
+
+# ====================
+# Code Evaluation Endpoint
+# ====================
+
+@router.post("/evaluate-code", response_model=EvaluateCodeResponse)
+async def evaluate_code(request: EvaluateCodeRequest):
+    """
+    Evaluate candidate code submission using AI.
+
+    Takes candidate_id, question, answer_files (code), and optional sandbox_link.
+    Returns detailed evaluation with score breakdown.
+    """
+    try:
+        evaluator = get_code_evaluator()
+        result = await evaluator.evaluate_code(request)
+
+        return EvaluateCodeResponse(
+            success=True,
+            candidate_id=request.candidate_id,
+            evaluation_result=result,
+            total_score=result.overall_score,
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Code evaluation failed: {str(e)}")
 
 
 # ====================

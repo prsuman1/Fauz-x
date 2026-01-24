@@ -72,18 +72,19 @@
                 </div>
 
                 <!-- Card 3: Code Check -->
-                <div class="bg-white rounded-2xl shadow-lg p-8 card-disabled border-2 border-transparent">
-                    <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-6">
-                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div onclick="navigateTo('code-check')"
+                     class="bg-white rounded-2xl shadow-lg p-8 cursor-pointer card-hover border-2 border-transparent hover:border-purple-500">
+                    <div class="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mb-6">
+                        <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
                         </svg>
                     </div>
                     <h3 class="text-xl font-bold text-gray-800 mb-3">Code Check</h3>
                     <p class="text-gray-600 text-sm mb-4">Evaluate candidate coding skills with AI-powered code review and assessment.</p>
-                    <div class="flex items-center text-gray-400 font-medium text-sm">
-                        <span>Coming Soon</span>
+                    <div class="flex items-center text-purple-600 font-medium text-sm">
+                        <span>Evaluate Now</span>
                         <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                         </svg>
                     </div>
                 </div>
@@ -368,6 +369,170 @@ Capabilities
             </div>
         </div>
 
+        <!-- ==================== CODE CHECK SECTION ==================== -->
+        <div id="code-check-section" class="hidden">
+            <!-- Back Button & Header -->
+            <div class="flex items-center mb-6">
+                <button onclick="navigateTo('home')" class="flex items-center text-gray-600 hover:text-purple-600 mr-4">
+                    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back
+                </button>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800">Code Check</h1>
+                    <p class="text-gray-500 text-sm">AI-powered code evaluation and assessment</p>
+                </div>
+            </div>
+
+            <!-- Input Section -->
+            <div id="code-input-section" class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <div class="space-y-6">
+                    <!-- Candidate ID -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Candidate ID</label>
+                        <input type="text" id="candidate-id-input"
+                            class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                            placeholder="e.g., b80ac832-17c0-47ac-ba3f-1e271ed0aa92">
+                    </div>
+
+                    <!-- Question -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Coding Question/Problem</label>
+                        <textarea id="code-question-input" rows="4"
+                            class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                            placeholder="Describe the coding task/problem that the candidate was asked to solve..."></textarea>
+                    </div>
+
+                    <!-- Answer Files (JSON) -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Answer Files (JSON)</label>
+                        <textarea id="code-files-input" rows="8"
+                            class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono text-sm"
+                            placeholder='{
+    "/App.js": "export default function App(){ return <h1>Hello</h1> }",
+    "/index.js": "import App from \"./App\"; ..."
+}'></textarea>
+                        <p class="mt-1 text-xs text-gray-500">JSON object mapping file paths to code content</p>
+                    </div>
+
+                    <!-- Sandbox Link (Optional) -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">CodeSandbox Link (Optional)</label>
+                        <input type="text" id="sandbox-link-input"
+                            class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                            placeholder="https://codesandbox.io/s/abc123">
+                        <p class="mt-1 text-xs text-gray-500">Optional: We'll fetch additional files from the sandbox</p>
+                    </div>
+                </div>
+
+                <!-- Evaluate Button -->
+                <div class="mt-6 text-center">
+                    <button id="evaluate-btn" onclick="evaluateCode()"
+                            class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-8 rounded-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Evaluate Code
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="code-loading" class="hidden bg-white rounded-xl shadow-lg p-8 mb-8 text-center">
+                <div class="loading">
+                    <svg class="w-16 h-16 mx-auto text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                    </svg>
+                    <p class="mt-4 text-lg text-gray-600">Evaluating Code...</p>
+                    <p class="text-sm text-gray-400">AI is analyzing the code submission</p>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="code-results" class="hidden">
+                <!-- Score Card -->
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                    <div class="flex items-center justify-between flex-wrap gap-4">
+                        <div>
+                            <h3 class="text-lg text-gray-500">Total Score</h3>
+                            <div class="flex items-baseline gap-3">
+                                <span id="code-score-value" class="text-5xl font-bold"></span>
+                                <span id="code-pass-badge" class="px-4 py-2 rounded-full text-white font-semibold"></span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-gray-500">Candidate: <span id="result-candidate-id" class="font-medium text-gray-700"></span></p>
+                            <p class="text-sm text-gray-500">Confidence: <span id="result-confidence" class="font-medium text-gray-700"></span></p>
+                        </div>
+                    </div>
+                    <p id="code-summary" class="mt-4 text-gray-600 border-t pt-4"></p>
+                </div>
+
+                <!-- Score Breakdown -->
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                    <h3 class="font-semibold text-gray-700 mb-4">Score Breakdown</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center">
+                            <span class="w-32 text-sm text-gray-600">Functionality</span>
+                            <div class="flex-1 bg-gray-200 rounded-full h-4 mx-3">
+                                <div id="bar-functionality" class="bg-purple-500 h-4 rounded-full transition-all"></div>
+                            </div>
+                            <span id="score-functionality" class="w-12 text-sm font-medium text-gray-700"></span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-32 text-sm text-gray-600">Completeness</span>
+                            <div class="flex-1 bg-gray-200 rounded-full h-4 mx-3">
+                                <div id="bar-completeness" class="bg-blue-500 h-4 rounded-full transition-all"></div>
+                            </div>
+                            <span id="score-completeness" class="w-12 text-sm font-medium text-gray-700"></span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-32 text-sm text-gray-600">Code Quality</span>
+                            <div class="flex-1 bg-gray-200 rounded-full h-4 mx-3">
+                                <div id="bar-code-quality" class="bg-green-500 h-4 rounded-full transition-all"></div>
+                            </div>
+                            <span id="score-code-quality" class="w-12 text-sm font-medium text-gray-700"></span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-32 text-sm text-gray-600">Best Practices</span>
+                            <div class="flex-1 bg-gray-200 rounded-full h-4 mx-3">
+                                <div id="bar-best-practices" class="bg-yellow-500 h-4 rounded-full transition-all"></div>
+                            </div>
+                            <span id="score-best-practices" class="w-12 text-sm font-medium text-gray-700"></span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-32 text-sm text-gray-600">Performance</span>
+                            <div class="flex-1 bg-gray-200 rounded-full h-4 mx-3">
+                                <div id="bar-performance" class="bg-red-500 h-4 rounded-full transition-all"></div>
+                            </div>
+                            <span id="score-performance" class="w-12 text-sm font-medium text-gray-700"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Strengths, Issues, Improvements -->
+                <div class="grid md:grid-cols-3 gap-6 mb-6">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="font-semibold text-green-600 mb-3">Strengths</h3>
+                        <ul id="code-strengths" class="text-sm text-gray-600 list-disc list-inside space-y-1"></ul>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="font-semibold text-red-600 mb-3">Code Issues</h3>
+                        <ul id="code-issues" class="text-sm text-gray-600 list-disc list-inside space-y-1"></ul>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="font-semibold text-blue-600 mb-3">Improvements</h3>
+                        <ul id="code-improvements" class="text-sm text-gray-600 list-disc list-inside space-y-1"></ul>
+                    </div>
+                </div>
+
+                <!-- Reset Button -->
+                <div class="text-center">
+                    <button onclick="resetCodeForm()" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg">
+                        Evaluate Another
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -377,6 +542,7 @@ Capabilities
             document.getElementById('home-section').classList.add('hidden');
             document.getElementById('cv-matching-section').classList.add('hidden');
             document.getElementById('find-capabilities-section').classList.add('hidden');
+            document.getElementById('code-check-section').classList.add('hidden');
 
             // Show target section
             if (section === 'home') {
@@ -385,6 +551,8 @@ Capabilities
                 document.getElementById('cv-matching-section').classList.remove('hidden');
             } else if (section === 'find-capabilities') {
                 document.getElementById('find-capabilities-section').classList.remove('hidden');
+            } else if (section === 'code-check') {
+                document.getElementById('code-check-section').classList.remove('hidden');
             }
         }
 
@@ -760,6 +928,135 @@ Capabilities
             document.getElementById('capabilities-input-section').classList.remove('hidden');
             document.getElementById('jd-details-input').value = '';
             generatedCapabilities = [];
+        }
+
+        // ==================== CODE CHECK LOGIC ====================
+        async function evaluateCode() {
+            const candidateId = document.getElementById('candidate-id-input').value.trim();
+            const question = document.getElementById('code-question-input').value.trim();
+            const codeFilesInput = document.getElementById('code-files-input').value.trim();
+            const sandboxLink = document.getElementById('sandbox-link-input').value.trim();
+
+            // Validation
+            if (!candidateId) {
+                alert('Please enter a Candidate ID');
+                return;
+            }
+            if (!question) {
+                alert('Please enter the coding question/problem');
+                return;
+            }
+            if (!codeFilesInput) {
+                alert('Please enter the answer files JSON');
+                return;
+            }
+
+            // Parse answer files JSON
+            let answerFiles;
+            try {
+                answerFiles = JSON.parse(codeFilesInput);
+            } catch (e) {
+                alert('Invalid JSON format for answer files. Please check your input.');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('code-input-section').classList.add('hidden');
+            document.getElementById('code-loading').classList.remove('hidden');
+
+            try {
+                const response = await fetch('/api/evaluate-code', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        candidate_id: candidateId,
+                        question: question,
+                        answer_files: answerFiles,
+                        sandbox_link: sandboxLink || null
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Code evaluation failed');
+                }
+
+                displayCodeResults(data);
+
+            } catch (error) {
+                alert('Error: ' + error.message);
+                document.getElementById('code-loading').classList.add('hidden');
+                document.getElementById('code-input-section').classList.remove('hidden');
+            }
+        }
+
+        function displayCodeResults(data) {
+            document.getElementById('code-loading').classList.add('hidden');
+            document.getElementById('code-results').classList.remove('hidden');
+
+            const result = data.evaluation_result;
+
+            // Score and Pass/Fail
+            document.getElementById('code-score-value').textContent = result.overall_score.toFixed(1);
+            document.getElementById('code-score-value').className = 'text-5xl font-bold ' +
+                (result.passed ? 'text-green-600' : 'text-red-600');
+
+            const passBadge = document.getElementById('code-pass-badge');
+            passBadge.textContent = result.passed ? 'PASSED' : 'FAILED';
+            passBadge.className = 'px-4 py-2 rounded-full text-white font-semibold ' +
+                (result.passed ? 'bg-green-500' : 'bg-red-500');
+
+            // Candidate info
+            document.getElementById('result-candidate-id').textContent = data.candidate_id;
+            document.getElementById('result-confidence').textContent = (result.confidence_level * 100).toFixed(0) + '%';
+
+            // Summary
+            document.getElementById('code-summary').textContent = result.summary;
+
+            // Score breakdown bars
+            const breakdown = result.score_breakdown;
+            updateScoreBar('functionality', breakdown.functionality);
+            updateScoreBar('completeness', breakdown.completeness);
+            updateScoreBar('code-quality', breakdown.code_quality);
+            updateScoreBar('best-practices', breakdown.best_practices);
+            updateScoreBar('performance', breakdown.performance);
+
+            // Lists
+            displayCodeList('code-strengths', result.strengths);
+            displayCodeList('code-issues', result.code_issues);
+            displayCodeList('code-improvements', result.improvements);
+        }
+
+        function updateScoreBar(name, score) {
+            document.getElementById('bar-' + name).style.width = score + '%';
+            document.getElementById('score-' + name).textContent = score;
+        }
+
+        function displayCodeList(elementId, items) {
+            const list = document.getElementById(elementId);
+            list.innerHTML = '';
+            if (!items || items.length === 0) {
+                list.innerHTML = '<li class="text-gray-400">None</li>';
+                return;
+            }
+            items.forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = item;
+                list.appendChild(li);
+            });
+        }
+
+        function resetCodeForm() {
+            document.getElementById('code-results').classList.add('hidden');
+            document.getElementById('code-input-section').classList.remove('hidden');
+
+            document.getElementById('candidate-id-input').value = '';
+            document.getElementById('code-question-input').value = '';
+            document.getElementById('code-files-input').value = '';
+            document.getElementById('sandbox-link-input').value = '';
         }
     </script>
 </body>

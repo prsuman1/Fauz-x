@@ -23,6 +23,7 @@ OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/ap
 # Model Configuration
 DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "anthropic/claude-3-haiku")
 FALLBACK_MODEL = os.getenv("FALLBACK_MODEL", "qwen/qwen3-8b")
+CODE_MODEL = os.getenv("CODE_MODEL", "anthropic/claude-sonnet-4")
 
 # App Settings
 APP_NAME = os.getenv("APP_NAME", "FaujX JD-CV Matcher")
@@ -39,6 +40,10 @@ SHORTLIST_THRESHOLD = 95  # Score 87-94 = SHORTLIST, 95+ = MUST_HIRE (STRONG_HIR
 # MCQ Settings
 MIN_MCQ_QUESTIONS = 15
 MCQ_PASS_PERCENTAGE = 60
+
+# Code Check Settings
+CODE_CHECK_PASS_THRESHOLD = 80  # Score >= 80 is considered passed
+CODE_CHECK_MAX_SCORE = 100
 
 # CSV Log file
 MATCH_LOG_FILE = LOGS_DIR / "match_results.csv"

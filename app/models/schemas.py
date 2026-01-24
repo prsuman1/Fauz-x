@@ -229,3 +229,44 @@ class GenerateCapabilitiesResponse(BaseModel):
     jd_title: str
     role_type: str
     capabilities: List[str]
+
+
+# Code Check Models
+class ScoreBreakdown(BaseModel):
+    """Breakdown of scores by category"""
+    functionality: int = Field(ge=0, le=100)
+    completeness: int = Field(ge=0, le=100)
+    code_quality: int = Field(ge=0, le=100)
+    best_practices: int = Field(ge=0, le=100)
+    performance: int = Field(ge=0, le=100)
+
+
+class CodeEvaluationResult(BaseModel):
+    """Result of code evaluation"""
+    passed: bool
+    summary: str
+    max_score: int = 100
+    overall_score: float = Field(ge=0, le=100)
+    score_breakdown: ScoreBreakdown
+    strengths: List[str] = Field(default_factory=list)
+    code_issues: List[str] = Field(default_factory=list)
+    improvements: List[str] = Field(default_factory=list)
+    confidence_level: float = Field(ge=0, le=1)
+    processing_time: Optional[float] = None
+
+
+class EvaluateCodeRequest(BaseModel):
+    """Request for /api/evaluate-code endpoint"""
+    candidate_id: str
+    question: str
+    answer_files: Dict[str, str]  # {"/filename.js": "code content"}
+    sandbox_link: Optional[str] = None
+
+
+class EvaluateCodeResponse(BaseModel):
+    """Response for /api/evaluate-code endpoint"""
+    success: bool
+    message: Optional[str] = None
+    candidate_id: str
+    evaluation_result: Optional[CodeEvaluationResult] = None
+    total_score: Optional[float] = None
