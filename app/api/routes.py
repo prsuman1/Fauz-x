@@ -24,6 +24,9 @@ from app.models.schemas import (
     EvaluateCodeResponse,
     MatchV2Request,
     MatchV2Response,
+    GenerateMCQV2Request,
+    GenerateMCQV2Response,
+    MCQV2Metadata,
 )
 from app.utils.cv_parser import parse_cv, extract_skills_from_cv
 from app.utils.jd_parser import parse_jd, parse_jd_file
@@ -162,63 +165,30 @@ async def match_cv_jd(request: MatchV2Request):
 # Generate MCQ Endpoint
 # ====================
 
-@router.post("/generate-mcq", response_model=GenerateMCQResponse)
-async def generate_mcq(
-    cv_file: UploadFile = File(..., description="CV file (PDF, DOCX, or TXT)"),
-    jd_text: str = Form(..., description="JD text content"),
-):
+@router.post("/generate-mcq", response_model=GenerateMCQV2Response)
+async def generate_mcq(request: GenerateMCQV2Request):
     """
-    Generate MCQ test based on JD and CV skills.
+    Generate MCQ test based on role skills/capabilities and candidate data from DB.
 
-    This endpoint generates MCQ questions without running the full match analysis.
+    Accepts JSON body with jd_id (role_id), candidate_id, domain, num_questions,
+    and difficulty_mix. Returns questions focused on the role's required skills.
     """
     try:
-        # Parse CV
-        cv_bytes = await cv_file.read()
-        cv_text = parse_cv(file_bytes=cv_bytes, filename=cv_file.filename)
-
-        if not cv_text or len(cv_text.strip()) < 50:
-            raise HTTPException(status_code=400, detail="Could not extract text from CV")
-
-        # Parse JD
-        jd_input = parse_jd(jd_text)
-
-        # Extract skills from CV
-        cv_skills = extract_skills_from_cv(cv_text)
-
-        # Generate MCQ
         mcq_generator = get_mcq_generator()
-        mcq_test = await mcq_generator.generate_mcq_test(
-            jd_input=jd_input,
-            cv_skills=cv_skills,
-        )
+        questions, role_title = await mcq_generator.generate_mcq_v2(request)
 
-        # Generate session ID and store
-        session_id = _generate_session_id(cv_file.filename, jd_input.details.title)
-        _store_session(
-            session_id=session_id,
-            mcq_test=mcq_test,
-            jd_title=jd_input.details.title,
-            cv_filename=cv_file.filename,
-            jd_text=jd_text,
-            cv_text=cv_text,
-        )
-
-        # Return MCQ without correct answers
-        mcq_for_frontend = mcq_generator.get_mcq_for_frontend(mcq_test)
-
-        return GenerateMCQResponse(
+        return GenerateMCQV2Response(
             success=True,
-            mcq_test=mcq_for_frontend,
-            session_id=session_id,
-            jd_title=jd_input.details.title,
-            cv_filename=cv_file.filename,
+            questions=questions,
+            metadata=MCQV2Metadata(
+                total_questions=len(questions),
+                role=role_title,
+                domain=request.domain,
+            ),
         )
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except HTTPException:
-        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"MCQ generation failed: {str(e)}")
 

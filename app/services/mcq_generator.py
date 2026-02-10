@@ -1,4 +1,5 @@
 from typing import List, Dict, Any
+from uuid import UUID
 
 from app.models.schemas import (
     MCQQuestion,
@@ -7,8 +8,12 @@ from app.models.schemas import (
     JDInput,
     MCQQuestionForFrontend,
     MCQTestForFrontend,
+    GenerateMCQV2Request,
+    MCQV2Question,
 )
-from app.prompts import MCQ_SYSTEM_PROMPT, MCQ_USER_PROMPT
+from app.prompts import MCQ_SYSTEM_PROMPT, MCQ_USER_PROMPT, MCQ_V2_SYSTEM_PROMPT, MCQ_V2_USER_PROMPT
+from app.db import get_db_pool
+from app.db.queries import fetch_role_info_by_role_id, fetch_candidate_with_user
 from app.services.llm_client import get_llm_client
 from app.utils.jd_parser import get_role_type, get_all_skills_from_jd
 from app.config import MIN_MCQ_QUESTIONS, MCQ_PASS_PERCENTAGE
@@ -169,6 +174,142 @@ class MCQGenerator:
             role_type=mcq_test.role_type,
             questions=questions_for_frontend,
         )
+
+    # ============================
+    # MCQ V2 Methods (DB-backed)
+    # ============================
+
+    async def generate_mcq_v2(self, request: GenerateMCQV2Request) -> tuple[List[MCQV2Question], str]:
+        """
+        Generate MCQ questions from DB-backed role and candidate data.
+
+        Returns:
+            Tuple of (questions list, role title)
+        """
+        # Validate UUIDs
+        try:
+            jd_uuid = UUID(request.jd_id)
+            candidate_uuid = UUID(request.candidate_id)
+        except ValueError:
+            raise ValueError("jd_id and candidate_id must be valid UUIDs")
+
+        pool = await get_db_pool()
+
+        # Fetch role info and candidate from DB
+        role_info = await fetch_role_info_by_role_id(pool, jd_uuid)
+        if role_info is None:
+            raise ValueError(f"Role not found for jd_id: {request.jd_id}")
+
+        candidate = await fetch_candidate_with_user(pool, candidate_uuid)
+        if candidate is None:
+            raise ValueError(f"Candidate not found for candidate_id: {request.candidate_id}")
+
+        # Extract role data
+        jd_details = role_info["jd_details"]
+        capabilities = role_info["capabilities"]
+        role_title = jd_details.get("title", role_info.get("role_name", "Unknown"))
+        role_skills = ", ".join(jd_details.get("skills", []))
+        role_capabilities = "\n".join(
+            f"- {cap}" for cap in capabilities
+        ) if capabilities else "None specified"
+        role_nice_to_have = ", ".join(jd_details.get("niceToHave", [])) or "None specified"
+        role_responsibilities = "\n".join(
+            f"- {r}" for r in jd_details.get("responsibilities", [])
+        ) or "Not specified"
+
+        # Extract candidate data
+        candidate_name = candidate.get("full_name") or " ".join(
+            filter(None, [candidate.get("first_name"), candidate.get("last_name")])
+        ) or "Unknown"
+        candidate_skills = ", ".join(candidate.get("skills", [])) or "Not available"
+        candidate_parsed_skills = self._format_parsed_skills_for_prompt(
+            candidate.get("parsed_skills")
+        )
+
+        # Build difficulty breakdown string
+        difficulty_breakdown = self._build_difficulty_info(
+            request.num_questions, request.difficulty_mix
+        )
+
+        # Build user prompt
+        user_prompt = MCQ_V2_USER_PROMPT.format(
+            role_title=role_title,
+            domain=request.domain,
+            role_skills=role_skills,
+            role_capabilities=role_capabilities,
+            role_nice_to_have=role_nice_to_have,
+            role_responsibilities=role_responsibilities,
+            candidate_name=candidate_name,
+            candidate_skills=candidate_skills,
+            candidate_parsed_skills=candidate_parsed_skills,
+            num_questions=request.num_questions,
+            difficulty_breakdown=difficulty_breakdown,
+        )
+
+        # Call LLM
+        response = await self.llm_client.get_json_response(
+            system_prompt=MCQ_V2_SYSTEM_PROMPT,
+            user_prompt=user_prompt,
+        )
+
+        # Parse response
+        questions = self._parse_mcq_v2_response(response, request.domain)
+        return questions, role_title
+
+    def _format_parsed_skills_for_prompt(self, parsed_skills: Any) -> str:
+        """Format JSONB parsed_skills into readable text for the prompt."""
+        if not parsed_skills:
+            return "No detailed skills breakdown available"
+        lines = []
+        for category, skills in parsed_skills.items():
+            if skills and isinstance(skills, list) and len(skills) > 0:
+                lines.append(f"- {category}: {', '.join(str(s) for s in skills)}")
+        return "\n".join(lines) or "No detailed skills breakdown available"
+
+    def _build_difficulty_info(self, num_questions: int, difficulty_mix: Dict[str, float]) -> str:
+        """Compute per-difficulty counts and return a readable breakdown string."""
+        counts = {}
+        remaining = num_questions
+        items = list(difficulty_mix.items())
+        for i, (level, ratio) in enumerate(items):
+            if i == len(items) - 1:
+                counts[level] = remaining
+            else:
+                count = round(num_questions * ratio)
+                counts[level] = count
+                remaining -= count
+        parts = [f"{level}: {count} questions" for level, count in counts.items()]
+        return ", ".join(parts)
+
+    def _parse_mcq_v2_response(self, response: Dict[str, Any], domain: str) -> List[MCQV2Question]:
+        """Parse LLM JSON response into a list of MCQV2Question objects."""
+        questions_data = response.get("questions", [])
+        if isinstance(response, list):
+            questions_data = response
+
+        questions = []
+        for i, q in enumerate(questions_data):
+            # Handle options: could be list or dict
+            raw_options = q.get("options", [])
+            if isinstance(raw_options, dict):
+                options = [raw_options.get(k, "") for k in ["A", "B", "C", "D"]]
+            elif isinstance(raw_options, list):
+                options = raw_options[:4]
+            else:
+                options = []
+
+            questions.append(MCQV2Question(
+                question_id=q.get("question_id", i + 1),
+                type=q.get("type", "single_choice"),
+                difficulty=q.get("difficulty", "medium"),
+                question=q.get("question", ""),
+                domain=q.get("domain", domain),
+                skill_tags=q.get("skill_tags", []),
+                options=options,
+                correct_answer=q.get("correct_answer", "A"),
+            ))
+
+        return questions
 
 
 # Singleton instance

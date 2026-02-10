@@ -113,3 +113,94 @@ Candidate's Skills from CV: {cv_skills}
 }}
 
 Generate the MCQ questions now:"""
+
+
+# ============================
+# MCQ V2 Prompts (DB-backed)
+# ============================
+
+MCQ_V2_SYSTEM_PROMPT = """You are a technical assessment expert at FaujX. Your job is to generate MCQ questions to evaluate candidates for a specific role.
+
+## MCQ GENERATION RULES
+
+### 1. Question Focus
+- Questions must test the **role's required skills and capabilities** (primary source)
+- Use the candidate's existing skills to calibrate question relevance and difficulty (secondary source)
+- Prioritize the capabilities list for question topics
+
+### 2. Question Count & Difficulty
+- Generate EXACTLY the number of questions requested
+- Follow the difficulty distribution provided exactly
+- easy: Recall and basic understanding
+- medium: Application of concepts, common scenarios
+- hard: Edge cases, best practices, optimization, advanced concepts
+
+### 3. Question Format
+- Each question must have exactly 4 options as a LIST of strings (not a dict)
+- Exactly ONE correct answer per question, indicated as A/B/C/D
+- Options should be plausible (no obviously wrong answers)
+- Questions should test understanding, not just memory
+- Tag each question with relevant skill_tags
+
+### 4. Question Quality
+- Clear, unambiguous wording
+- No trick questions
+- Practical, real-world scenarios preferred
+- Code snippets where appropriate (keep them short)
+
+## OUTPUT FORMAT
+Return ONLY valid JSON. No markdown, no code blocks."""
+
+
+MCQ_V2_USER_PROMPT = """## Generate MCQ Test for Candidate Assessment
+
+### Role Information
+Role Title: {role_title}
+Domain: {domain}
+Skills Required: {role_skills}
+Capabilities: {role_capabilities}
+Nice to Have: {role_nice_to_have}
+Responsibilities:
+{role_responsibilities}
+
+### Candidate Information
+Name: {candidate_name}
+Skills from CV: {candidate_skills}
+Parsed Skills Breakdown:
+{candidate_parsed_skills}
+
+### Generation Parameters
+Total Questions: {num_questions}
+Difficulty Breakdown: {difficulty_breakdown}
+
+### Instructions
+1. Generate EXACTLY {num_questions} MCQ questions
+2. Focus questions on the role's required skills and capabilities listed above
+3. Use the candidate's skills to calibrate relevance
+4. Follow the difficulty distribution exactly
+5. Tag each question with the skills it tests
+
+### Return this EXACT JSON structure:
+
+{{
+  "questions": [
+    {{
+      "question_id": 1,
+      "type": "single_choice",
+      "difficulty": "<easy|medium|hard>",
+      "question": "<Clear question text>",
+      "domain": "{domain}",
+      "skill_tags": ["<skill1>", "<skill2>"],
+      "options": [
+        "<Option A text>",
+        "<Option B text>",
+        "<Option C text>",
+        "<Option D text>"
+      ],
+      "correct_answer": "<A|B|C|D>"
+    }},
+    ...more questions
+  ]
+}}
+
+Generate the MCQ questions now:"""

@@ -1,5 +1,5 @@
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from enum import Enum
 
 
@@ -365,3 +365,55 @@ class MatchV2Response(BaseModel):
     success: bool
     message: Optional[str] = None
     result: Optional[MatchV2Result] = None
+
+
+# ============================
+# MCQ V2 Models (DB-backed)
+# ============================
+
+class GenerateMCQV2Request(BaseModel):
+    """Request for DB-backed /api/generate-mcq endpoint"""
+    jd_id: str
+    candidate_id: str
+    domain: str
+    num_questions: int = Field(default=20, ge=5, le=50)
+    difficulty_mix: Dict[str, float] = Field(
+        default={"easy": 0.3, "medium": 0.5, "hard": 0.2}
+    )
+
+    @model_validator(mode="after")
+    def validate_difficulty_mix(self):
+        valid_keys = {"easy", "medium", "hard"}
+        if not set(self.difficulty_mix.keys()).issubset(valid_keys):
+            raise ValueError(f"difficulty_mix keys must be from {valid_keys}")
+        total = sum(self.difficulty_mix.values())
+        if not (0.95 <= total <= 1.05):
+            raise ValueError(f"difficulty_mix values must sum to ~1.0, got {total}")
+        return self
+
+
+class MCQV2Question(BaseModel):
+    """Single MCQ question in V2 format"""
+    question_id: int
+    type: str = "single_choice"
+    difficulty: str
+    question: str
+    domain: str
+    skill_tags: List[str] = Field(default_factory=list)
+    options: List[str]  # 4 full-text strings
+    correct_answer: str  # A/B/C/D
+
+
+class MCQV2Metadata(BaseModel):
+    """Metadata for MCQ V2 response"""
+    total_questions: int
+    role: str
+    domain: str
+
+
+class GenerateMCQV2Response(BaseModel):
+    """Response for DB-backed /api/generate-mcq endpoint"""
+    success: bool
+    message: Optional[str] = None
+    questions: List[MCQV2Question] = Field(default_factory=list)
+    metadata: Optional[MCQV2Metadata] = None
