@@ -45,5 +45,12 @@ MCQ_PASS_PERCENTAGE = 60
 CODE_CHECK_PASS_THRESHOLD = 80  # Score >= 80 is considered passed
 CODE_CHECK_MAX_SCORE = 100
 
+# Database
+DB_HOST = os.getenv("DATABASE_HOST", "localhost")
+DB_PORT = int(os.getenv("DATABASE_PORT", "5432"))
+DB_NAME = os.getenv("DATABASE_NAME", "faujx_dev")
+DB_USER = os.getenv("DATABASE_USER", "suman")
+DB_PASSWORD = os.getenv("DATABASE_PASSWORD", "")
+
 # CSV Log file
 MATCH_LOG_FILE = LOGS_DIR / "match_results.csv"

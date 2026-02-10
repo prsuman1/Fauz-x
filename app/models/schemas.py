@@ -270,3 +270,98 @@ class EvaluateCodeResponse(BaseModel):
     candidate_id: str
     evaluation_result: Optional[CodeEvaluationResult] = None
     total_score: Optional[float] = None
+
+
+# ============================
+# Match V2 Models (DB-backed)
+# ============================
+
+class MatchV2Request(BaseModel):
+    """Request for /api/match v2 endpoint"""
+    jd_id: str
+    candidate_id: str
+
+
+class CapabilityScore(BaseModel):
+    """Individual capability evaluation"""
+    id: int
+    skill: str
+    expectedLevel: str = "intermediate"
+    candidateLevel: str = "none"
+    score: int = Field(ge=0, le=10)
+    evidence: str = ""
+    meetsRequirement: bool = False
+
+
+class SkillCategory(BaseModel):
+    """Group of capabilities under a category"""
+    category: str
+    score: float = 0
+    weight: float = 0
+    capabilities: List[CapabilityScore] = Field(default_factory=list)
+
+
+class EvaluationSection(BaseModel):
+    """Top-level evaluation section"""
+    score: float = 0
+    weight: float = 0
+    weightedContribution: float = 0
+    categories: List[SkillCategory] = Field(default_factory=list)
+
+
+class NiceToHaveMatched(BaseModel):
+    """A matched nice-to-have skill"""
+    skill: str
+    evidence: str = ""
+    bonusPoints: float = 0
+
+
+class NiceToHaves(BaseModel):
+    """Nice-to-have skills evaluation"""
+    matched: List[NiceToHaveMatched] = Field(default_factory=list)
+    missing: List[str] = Field(default_factory=list)
+
+
+class MatchV2Summary(BaseModel):
+    """Summary of match evaluation"""
+    totalRequirements: int = 0
+    requirementsMetFully: int = 0
+    requirementsMetPartially: int = 0
+    requirementsMissing: int = 0
+    matchPercentage: float = 0
+    strengths: List[str] = Field(default_factory=list)
+    gaps: List[str] = Field(default_factory=list)
+    criticalMatches: List[str] = Field(default_factory=list)
+    criticalGaps: List[str] = Field(default_factory=list)
+    trainableWithin3Months: List[str] = Field(default_factory=list)
+
+
+class HiringDecision(BaseModel):
+    """Hiring decision details"""
+    thresholdMet: bool = False
+    scoreRange: str = ""
+    rating: str = ""
+    recommendation: str = ""
+    confidence: str = "medium"
+    rationale: str = ""
+
+
+class MatchV2Result(BaseModel):
+    """Full match v2 result"""
+    position: str = ""
+    candidateName: str = ""
+    overallScore: float = 0
+    evaluationCriteria: Dict[str, EvaluationSection] = Field(default_factory=dict)
+    niceToHaves: Optional[NiceToHaves] = None
+    summary: Optional[MatchV2Summary] = None
+    hiringDecision: Optional[HiringDecision] = None
+    analysisTimestamp: Optional[str] = None
+    capabilityFile: Optional[str] = None
+    domainMismatch: bool = False
+
+
+class MatchV2Response(BaseModel):
+    """Response for /api/match v2 endpoint"""
+    success: bool
+    message: Optional[str] = None
+    result: Optional[MatchV2Result] = None

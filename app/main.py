@@ -6,6 +6,7 @@ from pathlib import Path
 
 from app.config import APP_NAME, DEBUG
 from app.api import router
+from app.db import get_db_pool, close_db_pool
 
 # Create FastAPI app
 app = FastAPI(
@@ -55,11 +56,18 @@ async def startup_event():
     print(f"Starting {APP_NAME}...")
     print(f"Debug mode: {DEBUG}")
     print("API docs available at /docs")
+    try:
+        await get_db_pool()
+        print("Database connection pool initialized")
+    except Exception as e:
+        print(f"Warning: Database connection failed: {e}")
+        print("Non-DB endpoints will still work")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on shutdown."""
+    await close_db_pool()
     print(f"Shutting down {APP_NAME}...")
 
 

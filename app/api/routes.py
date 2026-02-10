@@ -22,10 +22,13 @@ from app.models.schemas import (
     GenerateCapabilitiesResponse,
     EvaluateCodeRequest,
     EvaluateCodeResponse,
+    MatchV2Request,
+    MatchV2Response,
 )
 from app.utils.cv_parser import parse_cv, extract_skills_from_cv
 from app.utils.jd_parser import parse_jd, parse_jd_file
 from app.services.matcher import get_matcher
+from app.services.match_v2 import get_matcher_v2
 from app.services.mcq_generator import get_mcq_generator
 from app.services.logger import get_logger
 from app.services.capabilities_generator import get_capabilities_generator
@@ -135,53 +138,22 @@ async def evaluate_code(request: EvaluateCodeRequest):
 # Match Only Endpoint
 # ====================
 
-@router.post("/match", response_model=MatchOnlyResponse)
-async def match_cv_jd(
-    cv_file: UploadFile = File(..., description="CV file (PDF, DOCX, or TXT)"),
-    jd_text: Optional[str] = Form(None, description="JD text content"),
-):
+@router.post("/match", response_model=MatchV2Response)
+async def match_cv_jd(request: MatchV2Request):
     """
-    Match CV against JD and return match result only (no MCQ generation).
+    Match a candidate against a JD using DB-backed data.
 
-    This is a lightweight endpoint for quick screening.
+    Accepts JSON body with jd_id (role_id) and candidate_id.
+    Returns capability-level evaluation with hiring decision.
     """
     try:
-        # Parse CV
-        cv_bytes = await cv_file.read()
-        cv_text = parse_cv(file_bytes=cv_bytes, filename=cv_file.filename)
+        matcher = get_matcher_v2()
+        result = await matcher.match(request.jd_id, request.candidate_id)
 
-        if not cv_text or len(cv_text.strip()) < 50:
-            raise HTTPException(status_code=400, detail="Could not extract text from CV")
-
-        # Parse JD
-        if not jd_text:
-            raise HTTPException(status_code=400, detail="jd_text is required")
-
-        jd_input = parse_jd(jd_text)
-
-        # Run matching
-        matcher = get_matcher()
-        match_result = await matcher.analyze_match(cv_text, jd_input)
-
-        # Log the result
-        logger = get_logger()
-        logger.log_match(
-            cv_filename=cv_file.filename,
-            jd_title=jd_input.details.title,
-            match_result=match_result,
-        )
-
-        return MatchOnlyResponse(
-            success=True,
-            match_result=match_result,
-            cv_filename=cv_file.filename,
-            jd_title=jd_input.details.title,
-        )
+        return MatchV2Response(success=True, result=result)
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except HTTPException:
-        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Match failed: {str(e)}")
 
