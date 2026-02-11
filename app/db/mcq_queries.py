@@ -116,17 +116,19 @@ async def fetch_mcq_answers_by_session(
     session_id: UUID,
 ) -> Optional[List[Dict[str, Any]]]:
     """
-    Fetch questions with their correct answers for a session.
+    Fetch questions with their correct answers (full text) for a session.
 
-    Returns list of dicts with question_id, question, correct_answers, explanation, type.
+    Returns list of dicts with question_id, question, correct_answers (text), explanation, type.
     Returns None if no session/questions found.
     """
     rows = await pool.fetch(
         """
         SELECT q.question_id, q.question_text, q.type, q.explanation,
-               array_agg(ca.answer_label ORDER BY ca.answer_label) AS correct_answers
+               array_agg(opt.option_text ORDER BY ca.answer_label) AS correct_answers
         FROM "AI_questions" q
         JOIN "AI_question_correct_answers" ca ON ca.question_id = q.id
+        JOIN "AI_question_options" opt ON opt.question_id = q.id
+                                       AND opt.option_label = ca.answer_label
         WHERE q.session_id = $1
         GROUP BY q.question_id, q.question_text, q.type, q.explanation
         ORDER BY q.question_id
