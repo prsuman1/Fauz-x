@@ -90,14 +90,20 @@ async def health_check():
 
 @router.get("/key-status")
 async def key_status():
-    """Return status of all API keys (masked) with request counts and cooldown info."""
+    """Return status of all API keys (masked) with request counts, cooldown, and in-flight info."""
     manager = get_api_key_manager()
     keys = manager.get_status()
     available = sum(1 for k in keys if k["status"] == "available")
+    idle = sum(1 for k in keys if k["status"] == "available" and k["in_flight_count"] == 0)
+    busy = sum(1 for k in keys if k["in_flight_count"] > 0)
+    total_in_flight = sum(k["in_flight_count"] for k in keys)
     return {
         "total_keys": len(keys),
         "available_keys": available,
         "rate_limited_keys": len(keys) - available,
+        "idle_keys": idle,
+        "busy_keys": busy,
+        "total_in_flight_requests": total_in_flight,
         "keys": keys,
     }
 

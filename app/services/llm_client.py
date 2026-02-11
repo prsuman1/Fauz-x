@@ -1,6 +1,8 @@
 import json
 import re
+import time
 import httpx
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 
 from app.config import (
@@ -11,6 +13,32 @@ from app.config import (
     API_TIMEOUT_SECONDS,
 )
 from app.services.api_key_manager import get_api_key_manager
+
+
+async def _log_key_usage(api_key: str, started: float, status_code: Optional[int], model: Optional[str]) -> None:
+    """Fire-and-forget: DB insert for key usage. Non-blocking, failures silently dropped."""
+    try:
+        from app.db import get_db_pool
+        from app.db.key_usage_queries import insert_key_usage
+
+        finished = time.time()
+        duration = finished - started
+        key_hint = f"...{api_key[-6:]}"
+        started_dt = datetime.fromtimestamp(started, tz=timezone.utc)
+        finished_dt = datetime.fromtimestamp(finished, tz=timezone.utc)
+
+        pool = await get_db_pool()
+        await insert_key_usage(
+            pool=pool,
+            key_hint=key_hint,
+            started_at=started_dt,
+            finished_at=finished_dt,
+            duration_s=round(duration, 3),
+            status_code=status_code,
+            model=model,
+        )
+    except Exception:
+        pass  # silently drop — DB logging must never break LLM calls
 
 
 class LLMClient:
@@ -44,6 +72,7 @@ class LLMClient:
     ) -> str:
         """
         Make a chat completion request to OpenRouter.
+        Uses acquire/release for in-flight tracking.
         Rotates API keys on 429 rate-limit errors.
         """
         model = model or self.default_model
@@ -62,54 +91,63 @@ class LLMClient:
         last_error = None
 
         for attempt in range(total_keys + 1):
-            api_key = await self.key_manager.get_next_key()
+            api_key = await self.key_manager.acquire_key()
             masked = f"...{api_key[-6:]}"
+            started = time.time()
+            status_code = None
 
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
-                try:
-                    response = await client.post(
-                        f"{self.base_url}/chat/completions",
-                        headers=self._get_headers(api_key),
-                        json=payload,
-                    )
-
-                    if response.status_code == 429:
-                        self.key_manager.mark_rate_limited(api_key)
-                        print(f"[LLMClient] 429 on key {masked}, attempt {attempt + 1}/{total_keys + 1}")
-                        last_error = f"429 Rate Limited (key {masked})"
-                        continue
-
-                    response.raise_for_status()
-                    data = response.json()
-                    return data["choices"][0]["message"]["content"]
-
-                except httpx.HTTPStatusError as e:
-                    if e.response.status_code == 429:
-                        self.key_manager.mark_rate_limited(api_key)
-                        print(f"[LLMClient] 429 on key {masked}, attempt {attempt + 1}/{total_keys + 1}")
-                        last_error = f"429 Rate Limited (key {masked})"
-                        continue
-
-                    # Non-429 error: try fallback model
-                    if model != self.fallback_model:
-                        print(f"[LLMClient] Primary model failed (HTTP {e.response.status_code}), trying fallback...")
-                        return await self.chat_completion(
-                            system_prompt=system_prompt,
-                            user_prompt=user_prompt,
-                            model=self.fallback_model,
-                            temperature=temperature,
-                            max_tokens=max_tokens,
+            try:
+                async with httpx.AsyncClient(timeout=self.timeout) as client:
+                    try:
+                        response = await client.post(
+                            f"{self.base_url}/chat/completions",
+                            headers=self._get_headers(api_key),
+                            json=payload,
                         )
-                    raise
+                        status_code = response.status_code
 
-                except httpx.TimeoutException:
-                    print(f"[LLMClient] Timeout on key {masked}, attempt {attempt + 1}/{total_keys + 1}")
-                    last_error = f"Timeout after {self.timeout}s (key {masked})"
-                    continue
+                        if response.status_code == 429:
+                            self.key_manager.mark_rate_limited(api_key)
+                            print(f"[LLMClient] 429 on key {masked}, attempt {attempt + 1}/{total_keys + 1}")
+                            last_error = f"429 Rate Limited (key {masked})"
+                            continue
 
-                except Exception as e:
-                    err_msg = f"{type(e).__name__}: {e}" if str(e) else type(e).__name__
-                    raise RuntimeError(f"LLM API call failed: {err_msg}")
+                        response.raise_for_status()
+                        data = response.json()
+                        return data["choices"][0]["message"]["content"]
+
+                    except httpx.HTTPStatusError as e:
+                        status_code = e.response.status_code
+                        if e.response.status_code == 429:
+                            self.key_manager.mark_rate_limited(api_key)
+                            print(f"[LLMClient] 429 on key {masked}, attempt {attempt + 1}/{total_keys + 1}")
+                            last_error = f"429 Rate Limited (key {masked})"
+                            continue
+
+                        # Non-429 error: try fallback model
+                        if model != self.fallback_model:
+                            print(f"[LLMClient] Primary model failed (HTTP {e.response.status_code}), trying fallback...")
+                            return await self.chat_completion(
+                                system_prompt=system_prompt,
+                                user_prompt=user_prompt,
+                                model=self.fallback_model,
+                                temperature=temperature,
+                                max_tokens=max_tokens,
+                            )
+                        raise
+
+                    except httpx.TimeoutException:
+                        print(f"[LLMClient] Timeout on key {masked}, attempt {attempt + 1}/{total_keys + 1}")
+                        last_error = f"Timeout after {self.timeout}s (key {masked})"
+                        continue
+
+                    except Exception as e:
+                        err_msg = f"{type(e).__name__}: {e}" if str(e) else type(e).__name__
+                        raise RuntimeError(f"LLM API call failed: {err_msg}")
+
+            finally:
+                await self.key_manager.release_key(api_key)
+                await _log_key_usage(api_key, started, status_code, model)
 
         # All retries exhausted — try fallback model if we haven't already
         if model != self.fallback_model:

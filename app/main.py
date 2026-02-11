@@ -57,8 +57,15 @@ async def startup_event():
     print(f"Debug mode: {DEBUG}")
     print("API docs available at /docs")
     try:
-        await get_db_pool()
+        pool = await get_db_pool()
         print("Database connection pool initialized")
+        # Create key usage tracking table
+        try:
+            from app.db.key_usage_queries import ensure_key_usage_table
+            await ensure_key_usage_table(pool)
+            print("API key usage table ready")
+        except Exception as e:
+            print(f"Warning: Could not create key usage table: {e}")
     except Exception as e:
         print(f"Warning: Database connection failed: {e}")
         print("Non-DB endpoints will still work")
