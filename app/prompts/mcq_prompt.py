@@ -137,12 +137,18 @@ MCQ_V2_SYSTEM_PROMPT = """You are a technical assessment expert at FaujX. Your j
 
 ### 3. Question Format
 - Each question must have exactly 4 options as a LIST of strings (not a dict)
-- Exactly ONE correct answer per question, indicated as A/B/C/D
 - Options should be plausible (no obviously wrong answers)
 - Questions should test understanding, not just memory
 - Tag each question with relevant skill_tags
 
-### 4. Question Quality
+### 4. Question Types
+- **single_choice** (85-90% of questions): Exactly ONE correct answer. Set `correct_answers` to a list with one label, e.g. ["B"].
+- **multiple_choice** (10-15% of questions): TWO or more correct answers. Set `correct_answers` to a list of correct labels, e.g. ["A", "C"]. These questions should explicitly state "Select ALL that apply" in the question text.
+
+### 5. Explanation
+- For EVERY question, provide a concise `explanation` (1-2 sentences) that explains WHY the correct answer(s) are correct.
+
+### 6. Question Quality
 - Clear, unambiguous wording
 - No trick questions
 - Practical, real-world scenarios preferred
@@ -197,10 +203,16 @@ Difficulty Breakdown: {difficulty_breakdown}
         "<Option C text>",
         "<Option D text>"
       ],
-      "correct_answer": "<A|B|C|D>"
+      "correct_answers": ["<A|B|C|D>"],
+      "explanation": "<1-2 sentence explanation of why the answer is correct>"
     }},
     ...more questions
   ]
 }}
+
+Notes:
+- For single_choice: correct_answers has exactly 1 element, e.g. ["B"]
+- For multiple_choice: correct_answers has 2+ elements, e.g. ["A", "C"]
+- 10-15% of questions should be multiple_choice with "Select ALL that apply" in the question text
 
 Generate the MCQ questions now:"""

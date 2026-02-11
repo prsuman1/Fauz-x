@@ -393,7 +393,7 @@ class GenerateMCQV2Request(BaseModel):
 
 
 class MCQV2Question(BaseModel):
-    """Single MCQ question in V2 format"""
+    """Single MCQ question in V2 format (full, with answers — for internal use)"""
     question_id: int
     type: str = "single_choice"
     difficulty: str
@@ -401,19 +401,56 @@ class MCQV2Question(BaseModel):
     domain: str
     skill_tags: List[str] = Field(default_factory=list)
     options: List[str]  # 4 full-text strings
-    correct_answer: str  # A/B/C/D
+    correct_answer: str  # A/B/C/D (primary, for single_choice)
+    correct_answers: List[str] = Field(default_factory=list)  # ["B"] or ["A","C"] for multiple
+    explanation: str = ""
+    source: str = "llm_generated"
+
+
+class MCQV2QuestionForFrontend(BaseModel):
+    """MCQ question stripped of answers — returned to frontend"""
+    question_id: int
+    type: str = "single_choice"
+    difficulty: str
+    question: str
+    skill_tags: List[str] = Field(default_factory=list)
+    options: List[str]
 
 
 class MCQV2Metadata(BaseModel):
     """Metadata for MCQ V2 response"""
+    role_id: str
+    skills: List[str] = Field(default_factory=list)
+    candidate_id: str
+    skills_count: int = 0
     total_questions: int
-    role: str
-    domain: str
+    session_id: str
 
 
 class GenerateMCQV2Response(BaseModel):
     """Response for DB-backed /api/generate-mcq endpoint"""
     success: bool
     message: Optional[str] = None
-    questions: List[MCQV2Question] = Field(default_factory=list)
+    questions: List[MCQV2QuestionForFrontend] = Field(default_factory=list)
     metadata: Optional[MCQV2Metadata] = None
+
+
+class GetMCQAnswersRequest(BaseModel):
+    """Request for /api/get-mcq-answers endpoint"""
+    session_id: str
+
+
+class MCQAnswerDetail(BaseModel):
+    """Single answer detail for get-mcq-answers response"""
+    question_id: int
+    question: str
+    correct_answer: str
+    correct_answers: List[str] = Field(default_factory=list)
+    explanation: str = ""
+    type: str = "single_choice"
+
+
+class GetMCQAnswersResponse(BaseModel):
+    """Response for /api/get-mcq-answers endpoint"""
+    success: bool
+    answers: List[MCQAnswerDetail] = Field(default_factory=list)

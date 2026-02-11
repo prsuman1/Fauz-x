@@ -51,6 +51,11 @@ DB_PORT = int(os.getenv("DATABASE_PORT", "5432"))
 DB_NAME = os.getenv("DATABASE_NAME", "faujx_dev")
 DB_USER = os.getenv("DATABASE_USER", "suman")
 DB_PASSWORD = os.getenv("DATABASE_PASSWORD", "")
+MCQ_DATABASE_NAME = os.getenv("MCQ_DATABASE_NAME", "mcq_database")
+MCQ_DB_HOST = os.getenv("MCQ_DATABASE_HOST", "localhost")
+MCQ_DB_PORT = int(os.getenv("MCQ_DATABASE_PORT", "5432"))
+MCQ_DB_USER = os.getenv("MCQ_DATABASE_USER", "suman")
+MCQ_DB_PASSWORD = os.getenv("MCQ_DATABASE_PASSWORD", "")
 
 # CSV Log file
 MATCH_LOG_FILE = LOGS_DIR / "match_results.csv"

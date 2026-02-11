@@ -6,7 +6,7 @@ from pathlib import Path
 
 from app.config import APP_NAME, DEBUG
 from app.api import router
-from app.db import get_db_pool, close_db_pool
+from app.db import get_db_pool, close_db_pool, get_mcq_db_pool, close_mcq_db_pool
 
 # Create FastAPI app
 app = FastAPI(
@@ -62,12 +62,19 @@ async def startup_event():
     except Exception as e:
         print(f"Warning: Database connection failed: {e}")
         print("Non-DB endpoints will still work")
+    try:
+        await get_mcq_db_pool()
+        print("MCQ database connection pool initialized")
+    except Exception as e:
+        print(f"Warning: MCQ database connection failed: {e}")
+        print("MCQ generation will not persist to DB")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on shutdown."""
     await close_db_pool()
+    await close_mcq_db_pool()
     print(f"Shutting down {APP_NAME}...")
 
 

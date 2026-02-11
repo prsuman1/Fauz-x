@@ -27,6 +27,10 @@ from app.models.schemas import (
     GenerateMCQV2Request,
     GenerateMCQV2Response,
     MCQV2Metadata,
+    MCQV2QuestionForFrontend,
+    GetMCQAnswersRequest,
+    GetMCQAnswersResponse,
+    MCQAnswerDetail,
 )
 from app.utils.cv_parser import parse_cv, extract_skills_from_cv
 from app.utils.jd_parser import parse_jd, parse_jd_file
@@ -171,19 +175,39 @@ async def generate_mcq(request: GenerateMCQV2Request):
     Generate MCQ test based on role skills/capabilities and candidate data from DB.
 
     Accepts JSON body with jd_id (role_id), candidate_id, domain, num_questions,
-    and difficulty_mix. Returns questions focused on the role's required skills.
+    and difficulty_mix. Returns questions WITHOUT answers (stored in mcq_database).
+    Use /get-mcq-answers with session_id to retrieve answers later.
     """
     try:
         mcq_generator = get_mcq_generator()
-        questions, role_title = await mcq_generator.generate_mcq_v2(request)
+        questions, role_title, session_id, candidate_name, role_skills = (
+            await mcq_generator.generate_mcq_v2(request)
+        )
+
+        # Strip answers — return only frontend-safe fields
+        frontend_questions = [
+            MCQV2QuestionForFrontend(
+                question_id=q.question_id,
+                type=q.type,
+                difficulty=q.difficulty,
+                question=q.question,
+                skill_tags=q.skill_tags,
+                options=q.options,
+            )
+            for q in questions
+        ]
 
         return GenerateMCQV2Response(
             success=True,
-            questions=questions,
+            message=f"{len(questions)} questions generated",
+            questions=frontend_questions,
             metadata=MCQV2Metadata(
+                role_id=request.jd_id,
+                skills=role_skills,
+                candidate_id=request.candidate_id,
+                skills_count=len(role_skills),
                 total_questions=len(questions),
-                role=role_title,
-                domain=request.domain,
+                session_id=session_id,
             ),
         )
 
@@ -197,26 +221,47 @@ async def generate_mcq(request: GenerateMCQV2Request):
 # Get MCQ Answers Endpoint
 # ====================
 
-@router.get("/get-mcq-answers/{session_id}", response_model=MCQAnswersResponse)
-async def get_mcq_answers(session_id: str):
+@router.post("/get-mcq-answers", response_model=GetMCQAnswersResponse)
+async def get_mcq_answers(request: GetMCQAnswersRequest):
     """
-    Get correct answers for an MCQ test session.
+    Get correct answers + explanations for an MCQ session from mcq_database.
 
-    Use this to retrieve answers without submitting candidate responses.
+    Accepts JSON body with session_id.
+    Returns answers with explanations for each question.
     """
-    session = _sessions_cache.get(session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+    from uuid import UUID as _UUID
+    from app.db import get_mcq_db_pool
+    from app.db.mcq_queries import fetch_mcq_answers_by_session
 
-    mcq_test: MCQTest = session["mcq_test"]
+    try:
+        session_uuid = _UUID(request.session_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid session_id format")
 
-    # Build answers dict
-    answers = {q.id: q.correct_answer for q in mcq_test.questions}
+    try:
+        mcq_pool = await get_mcq_db_pool()
+        rows = await fetch_mcq_answers_by_session(mcq_pool, session_uuid)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
-    return MCQAnswersResponse(
+    if rows is None:
+        raise HTTPException(status_code=404, detail="Session not found or has no questions")
+
+    answer_details = [
+        MCQAnswerDetail(
+            question_id=r["question_id"],
+            question=r["question"],
+            correct_answer=r["correct_answer"],
+            correct_answers=r["correct_answers"],
+            explanation=r["explanation"],
+            type=r["type"],
+        )
+        for r in rows
+    ]
+
+    return GetMCQAnswersResponse(
         success=True,
-        session_id=session_id,
-        answers=answers,
+        answers=answer_details,
     )
 
 

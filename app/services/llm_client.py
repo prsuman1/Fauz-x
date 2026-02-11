@@ -99,6 +99,7 @@ class LLMClient:
         system_prompt: str,
         user_prompt: str,
         model: Optional[str] = None,
+        max_tokens: int = 4096,
     ) -> Dict[str, Any]:
         """
         Make a chat completion request and parse the response as JSON.
@@ -110,6 +111,7 @@ class LLMClient:
             system_prompt=system_prompt,
             user_prompt=user_prompt,
             model=model,
+            max_tokens=max_tokens,
         )
 
         # Clean response - remove markdown code blocks if present
