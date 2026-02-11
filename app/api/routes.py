@@ -40,6 +40,7 @@ from app.services.mcq_generator import get_mcq_generator
 from app.services.logger import get_logger
 from app.services.capabilities_generator import get_capabilities_generator
 from app.services.code_evaluator import get_code_evaluator
+from app.services.api_key_manager import get_api_key_manager
 
 router = APIRouter()
 
@@ -81,6 +82,24 @@ def _store_session(
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "service": "FaujX JD-CV Matcher"}
+
+
+# ====================
+# API Key Status (Debug)
+# ====================
+
+@router.get("/key-status")
+async def key_status():
+    """Return status of all API keys (masked) with request counts and cooldown info."""
+    manager = get_api_key_manager()
+    keys = manager.get_status()
+    available = sum(1 for k in keys if k["status"] == "available")
+    return {
+        "total_keys": len(keys),
+        "available_keys": available,
+        "rate_limited_keys": len(keys) - available,
+        "keys": keys,
+    }
 
 
 # ====================

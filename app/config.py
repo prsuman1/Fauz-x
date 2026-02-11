@@ -20,6 +20,18 @@ UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 
+# Multi-key support: collect OPENROUTER_API_KEY, OPENROUTER_API_KEY_1, ..., OPENROUTER_API_KEY_9
+OPENROUTER_API_KEYS: list[str] = []
+_base_key = os.getenv("OPENROUTER_API_KEY", "").strip()
+if _base_key:
+    OPENROUTER_API_KEYS.append(_base_key)
+for i in range(1, 10):
+    _k = os.getenv(f"OPENROUTER_API_KEY_{i}", "").strip()
+    if _k and _k not in OPENROUTER_API_KEYS:
+        OPENROUTER_API_KEYS.append(_k)
+
+API_KEY_COOLDOWN_SECONDS = int(os.getenv("API_KEY_COOLDOWN_SECONDS", "60"))
+
 # Model Configuration
 DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "anthropic/claude-3-haiku")
 FALLBACK_MODEL = os.getenv("FALLBACK_MODEL", "qwen/qwen3-8b")
