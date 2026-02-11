@@ -76,9 +76,7 @@ class LLMClient:
                     if response.status_code == 429:
                         self.key_manager.mark_rate_limited(api_key)
                         print(f"[LLMClient] 429 on key {masked}, attempt {attempt + 1}/{total_keys + 1}")
-                        last_error = httpx.HTTPStatusError(
-                            "Rate limited", request=response.request, response=response
-                        )
+                        last_error = f"429 Rate Limited (key {masked})"
                         continue
 
                     response.raise_for_status()
@@ -89,12 +87,12 @@ class LLMClient:
                     if e.response.status_code == 429:
                         self.key_manager.mark_rate_limited(api_key)
                         print(f"[LLMClient] 429 on key {masked}, attempt {attempt + 1}/{total_keys + 1}")
-                        last_error = e
+                        last_error = f"429 Rate Limited (key {masked})"
                         continue
 
                     # Non-429 error: try fallback model
                     if model != self.fallback_model:
-                        print(f"[LLMClient] Primary model failed ({e}), trying fallback...")
+                        print(f"[LLMClient] Primary model failed (HTTP {e.response.status_code}), trying fallback...")
                         return await self.chat_completion(
                             system_prompt=system_prompt,
                             user_prompt=user_prompt,
@@ -104,11 +102,26 @@ class LLMClient:
                         )
                     raise
 
-                except Exception as e:
-                    raise RuntimeError(f"LLM API call failed: {str(e)}")
+                except httpx.TimeoutException:
+                    print(f"[LLMClient] Timeout on key {masked}, attempt {attempt + 1}/{total_keys + 1}")
+                    last_error = f"Timeout after {self.timeout}s (key {masked})"
+                    continue
 
-        # All retries exhausted
-        raise RuntimeError(f"All {total_keys} API keys rate-limited. Last error: {last_error}")
+                except Exception as e:
+                    err_msg = f"{type(e).__name__}: {e}" if str(e) else type(e).__name__
+                    raise RuntimeError(f"LLM API call failed: {err_msg}")
+
+        # All retries exhausted — try fallback model if we haven't already
+        if model != self.fallback_model:
+            print(f"[LLMClient] All keys exhausted ({last_error}), trying fallback model...")
+            return await self.chat_completion(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                model=self.fallback_model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+        raise RuntimeError(f"All {total_keys} API keys exhausted. Last error: {last_error}")
 
     async def get_json_response(
         self,
