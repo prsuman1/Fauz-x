@@ -99,6 +99,7 @@ class MatcherV2:
         response = await self.llm_client.get_json_response(
             system_prompt=MATCH_V2_SYSTEM_PROMPT,
             user_prompt=user_prompt,
+            endpoint="match",
         )
 
         # Parse into result model

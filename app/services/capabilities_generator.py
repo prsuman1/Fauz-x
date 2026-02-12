@@ -40,6 +40,7 @@ class CapabilitiesGenerator:
         response = await self.llm_client.get_json_response(
             system_prompt=CAPABILITIES_SYSTEM_PROMPT,
             user_prompt=user_prompt,
+            endpoint="generate-capabilities",
         )
 
         # Parse and validate the response

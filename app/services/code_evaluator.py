@@ -65,6 +65,7 @@ class CodeEvaluator:
             system_prompt=CODE_EVALUATION_SYSTEM_PROMPT,
             user_prompt=user_prompt,
             model=self.model,
+            endpoint="evaluate-code",
         )
 
         processing_time = time.time() - start_time

@@ -15,8 +15,12 @@ async def ensure_key_usage_table(pool: asyncpg.Pool) -> None:
                 duration_s  REAL NOT NULL,
                 status_code INTEGER,
                 model       VARCHAR(100),
+                endpoint    VARCHAR(100),
                 created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
             );
+        """)
+        await conn.execute("""
+            ALTER TABLE api_key_usage ADD COLUMN IF NOT EXISTS endpoint VARCHAR(100);
         """)
 
 
@@ -28,16 +32,17 @@ async def insert_key_usage(
     duration_s: float,
     status_code: Optional[int] = None,
     model: Optional[str] = None,
+    endpoint: Optional[str] = None,
 ) -> None:
     """Insert a key usage record. Failures are silently ignored (fire-and-forget)."""
     try:
         async with pool.acquire() as conn:
             await conn.execute(
                 """
-                INSERT INTO api_key_usage (key_hint, started_at, finished_at, duration_s, status_code, model)
-                VALUES ($1, $2, $3, $4, $5, $6)
+                INSERT INTO api_key_usage (key_hint, started_at, finished_at, duration_s, status_code, model, endpoint)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
                 """,
-                key_hint, started_at, finished_at, duration_s, status_code, model,
+                key_hint, started_at, finished_at, duration_s, status_code, model, endpoint,
             )
     except Exception as e:
         print(f"[key_usage] Failed to log usage: {e}")

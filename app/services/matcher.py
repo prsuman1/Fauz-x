@@ -49,6 +49,7 @@ class Matcher:
         response = await self.llm_client.get_json_response(
             system_prompt=MATCHING_SYSTEM_PROMPT,
             user_prompt=user_prompt,
+            endpoint="analyze",
         )
 
         # Parse and validate the response

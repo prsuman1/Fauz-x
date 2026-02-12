@@ -15,7 +15,7 @@ from app.config import (
 from app.services.api_key_manager import get_api_key_manager
 
 
-async def _log_key_usage(api_key: str, started: float, status_code: Optional[int], model: Optional[str]) -> None:
+async def _log_key_usage(api_key: str, started: float, status_code: Optional[int], model: Optional[str], endpoint: Optional[str] = None) -> None:
     """Fire-and-forget: DB insert for key usage. Non-blocking, failures silently dropped."""
     try:
         from app.db import get_db_pool
@@ -36,6 +36,7 @@ async def _log_key_usage(api_key: str, started: float, status_code: Optional[int
             duration_s=round(duration, 3),
             status_code=status_code,
             model=model,
+            endpoint=endpoint,
         )
     except Exception:
         pass  # silently drop — DB logging must never break LLM calls
@@ -69,6 +70,7 @@ class LLMClient:
         model: Optional[str] = None,
         temperature: float = 0.3,
         max_tokens: int = 4096,
+        endpoint: Optional[str] = None,
     ) -> str:
         """
         Make a chat completion request to OpenRouter.
@@ -133,6 +135,7 @@ class LLMClient:
                                 model=self.fallback_model,
                                 temperature=temperature,
                                 max_tokens=max_tokens,
+                                endpoint=endpoint,
                             )
                         raise
 
@@ -147,7 +150,7 @@ class LLMClient:
 
             finally:
                 await self.key_manager.release_key(api_key)
-                await _log_key_usage(api_key, started, status_code, model)
+                await _log_key_usage(api_key, started, status_code, model, endpoint)
 
         # All retries exhausted — try fallback model if we haven't already
         if model != self.fallback_model:
@@ -158,6 +161,7 @@ class LLMClient:
                 model=self.fallback_model,
                 temperature=temperature,
                 max_tokens=max_tokens,
+                endpoint=endpoint,
             )
         raise RuntimeError(f"All {total_keys} API keys exhausted. Last error: {last_error}")
 
@@ -167,6 +171,7 @@ class LLMClient:
         user_prompt: str,
         model: Optional[str] = None,
         max_tokens: int = 4096,
+        endpoint: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Make a chat completion request and parse the response as JSON.
@@ -179,6 +184,7 @@ class LLMClient:
             user_prompt=user_prompt,
             model=model,
             max_tokens=max_tokens,
+            endpoint=endpoint,
         )
 
         # Clean response - remove markdown code blocks if present
