@@ -66,6 +66,7 @@ class MCQGenerator:
         response = await self.llm_client.get_json_response(
             system_prompt=MCQ_SYSTEM_PROMPT,
             user_prompt=user_prompt,
+            max_tokens=100000,
             endpoint="generate-mcq",
         )
 
