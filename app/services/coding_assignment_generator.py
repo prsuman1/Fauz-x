@@ -54,7 +54,6 @@ class CodingAssignmentGenerator:
             filter(None, [candidate.get("first_name"), candidate.get("last_name")])
         ) or "Unknown"
         candidate_skills_list = candidate.get("skills", [])
-        candidate_skills = ", ".join(candidate_skills_list) or "Not available"
 
         # Smart capability selection
         mcq_pool = await get_mcq_db_pool()
@@ -84,12 +83,13 @@ class CodingAssignmentGenerator:
             )
 
         # Build prompts
+        role_skills = jd_details.get("skills", [])
         user_prompt = CODING_ASSIGNMENT_USER_PROMPT.format(
             role_title=role_title,
+            role_skills=", ".join(role_skills) if role_skills else "Not specified",
             target_capabilities=", ".join(target_capabilities) if target_capabilities else "General programming",
             capability_selection_reason=capability_selection_reason,
             candidate_name=candidate_name,
-            candidate_skills=candidate_skills,
             num_assignments=request.num_assignments,
             all_role_capabilities=", ".join(capabilities) if capabilities else "Not specified",
         )

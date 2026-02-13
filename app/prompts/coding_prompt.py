@@ -72,6 +72,7 @@ CODING_ASSIGNMENT_USER_PROMPT = """Generate {num_assignments} coding assignment(
 
 ## Role Information
 - **Job Title:** {role_title}
+- **Required Skills:** {role_skills}
 - **All Role Capabilities:** {all_role_capabilities}
 
 ## Target Capabilities for This Assignment
@@ -80,7 +81,6 @@ CODING_ASSIGNMENT_USER_PROMPT = """Generate {num_assignments} coding assignment(
 
 ## Candidate Information
 - **Name:** {candidate_name}
-- **Skills:** {candidate_skills}
 
 ## Requirements
 1. Focus the problems on testing the TARGET CAPABILITIES listed above.
