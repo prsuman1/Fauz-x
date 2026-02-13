@@ -176,18 +176,18 @@ class CodingAssignmentGenerator:
         for i, a in enumerate(assignments_data):
             examples = [
                 CodingAssignmentExample(
-                    input=ex.get("input", ""),
-                    output=ex.get("output", ""),
-                    explanation=ex.get("explanation", ""),
+                    input=str(ex.get("input", "")),
+                    output=str(ex.get("output", "")),
+                    explanation=str(ex.get("explanation", "")),
                 )
                 for ex in a.get("examples", [])
             ]
 
             test_cases = [
                 CodingAssignmentTestCase(
-                    input=tc.get("input", ""),
-                    expected_output=tc.get("expected_output", ""),
-                    description=tc.get("description", ""),
+                    input=str(tc.get("input", "")),
+                    expected_output=str(tc.get("expected_output", "")),
+                    description=str(tc.get("description", "")),
                     is_hidden=tc.get("is_hidden", False),
                 )
                 for tc in a.get("test_cases", [])
@@ -199,8 +199,8 @@ class CodingAssignmentGenerator:
                 problem_statement=a.get("problem_statement", ""),
                 difficulty=a.get("difficulty", "medium"),
                 category=a.get("category", ""),
-                input_format=a.get("input_format", ""),
-                output_format=a.get("output_format", ""),
+                input_format=str(a.get("input_format", "")),
+                output_format=str(a.get("output_format", "")),
                 constraints=a.get("constraints", []),
                 examples=examples,
                 test_cases=test_cases,
