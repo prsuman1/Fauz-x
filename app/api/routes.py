@@ -31,6 +31,8 @@ from app.models.schemas import (
     GetMCQAnswersRequest,
     GetMCQAnswersResponse,
     MCQAnswerDetail,
+    GenerateCodingAssignmentRequest,
+    GenerateCodingAssignmentResponse,
 )
 from app.utils.cv_parser import parse_cv, extract_skills_from_cv
 from app.utils.jd_parser import parse_jd, parse_jd_file
@@ -240,6 +242,30 @@ async def generate_mcq(request: GenerateMCQV2Request):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"MCQ generation failed: {str(e)}")
+
+
+# ====================
+# Generate Coding Assignment Endpoint
+# ====================
+
+@router.post("/generate-coding-assignment", response_model=GenerateCodingAssignmentResponse)
+async def generate_coding_assignment(request: GenerateCodingAssignmentRequest):
+    """
+    Generate tailored coding assignments for a candidate.
+
+    Performs smart capability selection — checks which skills were already tested
+    via MCQ and targets the untested gaps. Stores results in mcq_database.
+    """
+    from app.services.coding_assignment_generator import get_coding_assignment_generator
+
+    try:
+        generator = get_coding_assignment_generator()
+        return await generator.generate_coding_assignment(request)
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Coding assignment generation failed: {str(e)}")
 
 
 # ====================

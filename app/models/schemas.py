@@ -454,3 +454,73 @@ class GetMCQAnswersResponse(BaseModel):
     """Response for /api/get-mcq-answers endpoint"""
     success: bool
     answers: List[MCQAnswerDetail] = Field(default_factory=list)
+
+
+# ============================
+# Coding Assignment Models
+# ============================
+
+class GenerateCodingAssignmentRequest(BaseModel):
+    """Request for /api/generate-coding-assignment endpoint"""
+    jd_id: str
+    candidate_id: str
+    num_assignments: int = Field(default=1, ge=1, le=5)
+
+
+class CodingAssignmentExample(BaseModel):
+    """Single example for a coding assignment"""
+    input: str
+    output: str
+    explanation: str = ""
+
+
+class CodingAssignmentTestCase(BaseModel):
+    """Single test case for a coding assignment"""
+    input: str
+    expected_output: str
+    description: str = ""
+    is_hidden: bool = False
+
+
+class CodingAssignment(BaseModel):
+    """A single coding assignment"""
+    assignment_id: int
+    title: str
+    problem_statement: str
+    difficulty: str = "medium"
+    category: str = ""
+    input_format: str = ""
+    output_format: str = ""
+    constraints: List[str] = Field(default_factory=list)
+    examples: List[CodingAssignmentExample] = Field(default_factory=list)
+    test_cases: List[CodingAssignmentTestCase] = Field(default_factory=list)
+    starter_code: Dict[str, str] = Field(default_factory=dict)
+    solution_approach: str = ""
+    time_complexity: str = ""
+    space_complexity: str = ""
+    skills_tested: List[str] = Field(default_factory=list)
+    estimated_time_minutes: int = 30
+    hints: List[str] = Field(default_factory=list)
+
+
+class CodingAssignmentMetadata(BaseModel):
+    """Metadata about the candidate and JD"""
+    candidate_name: str = ""
+    candidate_email: Optional[str] = None
+    candidate_skills: List[str] = Field(default_factory=list)
+    current_role: Optional[str] = None
+
+
+class GenerateCodingAssignmentResponse(BaseModel):
+    """Response for /api/generate-coding-assignment endpoint"""
+    success: bool
+    message: Optional[str] = None
+    total_assignments: int = 0
+    assignments: List[CodingAssignment] = Field(default_factory=list)
+    job_title: str = ""
+    jd_source: str = "database"
+    generation_timestamp: str = ""
+    metadata: Optional[CodingAssignmentMetadata] = None
+    total_estimated_time_minutes: int = 0
+    difficulty_distribution: Dict[str, int] = Field(default_factory=dict)
+    skills_coverage: List[str] = Field(default_factory=list)
