@@ -484,6 +484,7 @@ class CodingAssignmentTestCase(BaseModel):
 
 class CodingAssignment(BaseModel):
     """A single coding assignment"""
+    coding_assignment_id: Optional[str] = None
     assignment_id: int
     title: str
     problem_statement: str

@@ -138,7 +138,11 @@ class CodingAssignmentGenerator:
                 },
             })
 
-        await store_coding_assignments(mcq_pool, assignment_dicts)
+        stored_ids = await store_coding_assignments(mcq_pool, assignment_dicts)
+
+        # Assign DB UUIDs to assignment objects
+        for assignment, db_id in zip(assignments, stored_ids):
+            assignment.coding_assignment_id = str(db_id)
 
         # Build response
         total_time = sum(a.estimated_time_minutes for a in assignments)
