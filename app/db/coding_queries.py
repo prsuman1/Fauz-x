@@ -1,5 +1,5 @@
 import json
-from typing import Dict, Any, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 import asyncpg
@@ -27,6 +27,28 @@ async def fetch_mcq_tested_skills(
         role_id,
     )
     return [row["skill_tag"] for row in rows]
+
+
+async def fetch_coding_assignment_by_id(
+    pool: asyncpg.Pool,
+    assignment_id: UUID,
+) -> Any:
+    """
+    Fetch a single coding assignment by its UUID primary key.
+    Returns the row as an asyncpg.Record or None.
+    """
+    return await pool.fetchrow(
+        """
+        SELECT id, candidate_id, role_id, assignment_number, title, problem_statement,
+               difficulty, category, input_format, output_format, constraints,
+               examples, test_cases, starter_code, solution_approach,
+               time_complexity, space_complexity, skills_tested,
+               estimated_time_minutes, hints, job_title, metadata
+        FROM "AI_coding_assignments"
+        WHERE id = $1
+        """,
+        assignment_id,
+    )
 
 
 async def store_coding_assignment(

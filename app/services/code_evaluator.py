@@ -1,10 +1,14 @@
 """
 Service for evaluating candidate code submissions using LLM.
 """
+import json
 import time
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Tuple
+from uuid import UUID
 
-from app.config import CODE_MODEL, CODE_CHECK_PASS_THRESHOLD, CODE_CHECK_MAX_SCORE
+from app.config import CODE_MODEL, CODE_CHECK_PASS_THRESHOLD
+from app.db import get_mcq_db_pool
+from app.db.coding_queries import fetch_coding_assignment_by_id
 from app.models.schemas import (
     CodeEvaluationResult,
     ScoreBreakdown,
@@ -12,7 +16,7 @@ from app.models.schemas import (
 )
 from app.prompts import CODE_EVALUATION_SYSTEM_PROMPT, CODE_EVALUATION_USER_PROMPT
 from app.services.llm_client import get_llm_client
-from app.utils.sandbox_fetcher import fetch_sandbox_files, format_code_files_for_prompt
+from app.utils.sandbox_fetcher import format_code_files_for_prompt
 
 
 class CodeEvaluator:
@@ -22,42 +26,59 @@ class CodeEvaluator:
         self.llm_client = get_llm_client()
         self.model = CODE_MODEL
         self.pass_threshold = CODE_CHECK_PASS_THRESHOLD
-        self.max_score = CODE_CHECK_MAX_SCORE
 
     async def evaluate_code(
         self, request: EvaluateCodeRequest
-    ) -> CodeEvaluationResult:
+    ) -> Tuple[CodeEvaluationResult, str]:
         """
         Evaluate a code submission.
 
         Args:
-            request: EvaluateCodeRequest with candidate_id, question, answer_files, sandbox_link
+            request: EvaluateCodeRequest with coding_assignment_id, files, max_score
 
         Returns:
-            CodeEvaluationResult with detailed evaluation
+            Tuple of (CodeEvaluationResult, candidate_id)
         """
         start_time = time.time()
 
-        # Merge answer_files with sandbox files if sandbox_link provided
-        code_files = dict(request.answer_files)
+        # Fetch the coding assignment from DB
+        try:
+            assignment_uuid = UUID(request.coding_assignment_id)
+        except ValueError:
+            raise ValueError("Invalid coding_assignment_id format")
 
-        if request.sandbox_link:
-            sandbox_files = await fetch_sandbox_files(request.sandbox_link)
-            if sandbox_files:
-                # Merge sandbox files (answer_files take precedence)
-                for path, content in sandbox_files.items():
-                    if path not in code_files:
-                        code_files[path] = content
+        pool = await get_mcq_db_pool()
+        row = await fetch_coding_assignment_by_id(pool, assignment_uuid)
+
+        if row is None:
+            raise ValueError("Coding assignment not found")
+
+        candidate_id = str(row["candidate_id"])
+
+        # Format constraints (JSON list → bullet points)
+        constraints_raw = row["constraints"]
+        if isinstance(constraints_raw, str):
+            constraints_raw = json.loads(constraints_raw)
+        constraints_text = "\n".join(f"- {c}" for c in constraints_raw) if constraints_raw else "None specified"
+
+        # Format examples (JSON list of dicts → formatted blocks)
+        examples_raw = row["examples"]
+        if isinstance(examples_raw, str):
+            examples_raw = json.loads(examples_raw)
+        examples_text = self._format_examples(examples_raw)
 
         # Format code files for the prompt
-        formatted_code = format_code_files_for_prompt(code_files)
+        formatted_code = format_code_files_for_prompt(request.files)
 
         # Build the user prompt
         user_prompt = CODE_EVALUATION_USER_PROMPT.format(
-            question=request.question,
+            title=row["title"],
+            problem_statement=row["problem_statement"],
+            input_format=row["input_format"] or "Not specified",
+            output_format=row["output_format"] or "Not specified",
+            constraints=constraints_text,
+            examples=examples_text,
             code_files=formatted_code,
-            candidate_id=request.candidate_id,
-            sandbox_url=request.sandbox_link or "Not provided",
         )
 
         # Get LLM response using CODE_MODEL
@@ -71,10 +92,29 @@ class CodeEvaluator:
         processing_time = time.time() - start_time
 
         # Parse and validate the response
-        return self._parse_evaluation_response(response, processing_time)
+        result = self._parse_evaluation_response(
+            response, processing_time, request.max_score
+        )
+        return result, candidate_id
+
+    @staticmethod
+    def _format_examples(examples: list) -> str:
+        """Format examples list into readable text blocks."""
+        if not examples:
+            return "None provided"
+
+        parts = []
+        for i, ex in enumerate(examples, 1):
+            block = f"**Example {i}:**\n"
+            block += f"  Input: {ex.get('input', 'N/A')}\n"
+            block += f"  Output: {ex.get('output', 'N/A')}"
+            if ex.get("explanation"):
+                block += f"\n  Explanation: {ex['explanation']}"
+            parts.append(block)
+        return "\n\n".join(parts)
 
     def _parse_evaluation_response(
-        self, response: Dict[str, Any], processing_time: float
+        self, response: Dict[str, Any], processing_time: float, max_score: int
     ) -> CodeEvaluationResult:
         """Parse the LLM response into a CodeEvaluationResult."""
 
@@ -108,7 +148,7 @@ class CodeEvaluator:
         return CodeEvaluationResult(
             passed=passed,
             summary=response.get("summary", "Evaluation completed."),
-            max_score=self.max_score,
+            max_score=max_score,
             overall_score=round(overall_score, 2),
             score_breakdown=score_breakdown,
             strengths=response.get("strengths", []),

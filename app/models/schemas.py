@@ -257,10 +257,9 @@ class CodeEvaluationResult(BaseModel):
 
 class EvaluateCodeRequest(BaseModel):
     """Request for /api/evaluate-code endpoint"""
-    candidate_id: str
-    question: str
-    answer_files: Dict[str, str]  # {"/filename.js": "code content"}
-    sandbox_link: Optional[str] = None
+    coding_assignment_id: str
+    files: Dict[str, str]  # {"/filename.js": "code content"}
+    max_score: int = 100
 
 
 class EvaluateCodeResponse(BaseModel):

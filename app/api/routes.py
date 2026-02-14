@@ -148,16 +148,16 @@ async def evaluate_code(request: EvaluateCodeRequest):
     """
     Evaluate candidate code submission using AI.
 
-    Takes candidate_id, question, answer_files (code), and optional sandbox_link.
-    Returns detailed evaluation with score breakdown.
+    Takes coding_assignment_id, files (code), and optional max_score.
+    Fetches the assignment question from the database and returns detailed evaluation.
     """
     try:
         evaluator = get_code_evaluator()
-        result = await evaluator.evaluate_code(request)
+        result, candidate_id = await evaluator.evaluate_code(request)
 
         return EvaluateCodeResponse(
             success=True,
-            candidate_id=request.candidate_id,
+            candidate_id=candidate_id,
             evaluation_result=result,
             total_score=result.overall_score,
         )

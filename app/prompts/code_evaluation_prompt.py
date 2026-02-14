@@ -120,17 +120,29 @@ Return a JSON object with this exact structure:
 
 CODE_EVALUATION_USER_PROMPT = """Evaluate the following code submission:
 
-## Coding Question/Problem
-{question}
+## Coding Assignment
+
+### {title}
+
+**Problem Statement:**
+{problem_statement}
+
+**Input Format:**
+{input_format}
+
+**Output Format:**
+{output_format}
+
+**Constraints:**
+{constraints}
+
+**Examples:**
+{examples}
 
 ## Submitted Code Files
 {code_files}
 
-## Additional Context
-- Candidate ID: {candidate_id}
-- Sandbox URL: {sandbox_url}
-
-Based on the question requirements and the submitted code, provide a comprehensive evaluation.
+Based on the assignment requirements and the submitted code, provide a comprehensive evaluation.
 
 Return ONLY valid JSON in the exact format specified in the system prompt.
 """
