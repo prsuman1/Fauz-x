@@ -54,7 +54,7 @@ MIN_MCQ_QUESTIONS = 15
 MCQ_PASS_PERCENTAGE = 60
 
 # Code Check Settings
-CODE_CHECK_PASS_THRESHOLD = 80  # Score >= 80 is considered passed
+CODE_CHECK_PASS_THRESHOLD = 60  # Score >= 60 is considered passed
 CODE_CHECK_MAX_SCORE = 100
 
 # Database
