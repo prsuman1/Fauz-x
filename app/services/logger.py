@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Optional
 
 from app.config import MATCH_LOG_FILE
-from app.models.schemas import MatchResult, MCQResult
+from app.models.schemas import MatchResult
 
 
 class MatchLogger:
@@ -32,8 +32,6 @@ class MatchLogger:
                     "domain_match",
                     "experience_type",
                     "recommendation",
-                    "mcq_score",
-                    "mcq_passed",
                     "summary",
                 ])
 
@@ -42,7 +40,6 @@ class MatchLogger:
         cv_filename: str,
         jd_title: str,
         match_result: MatchResult,
-        mcq_result: Optional[MCQResult] = None,
     ):
         """
         Log a match result to the CSV file.
@@ -51,7 +48,6 @@ class MatchLogger:
             cv_filename: Name of the CV file
             jd_title: Title of the job description
             match_result: The match analysis result
-            mcq_result: Optional MCQ test result
         """
         with open(self.log_file, "a", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
@@ -67,8 +63,6 @@ class MatchLogger:
                 match_result.experience_analysis.domain_match,
                 match_result.experience_analysis.experience_type,
                 match_result.recommendation,
-                mcq_result.score_percentage if mcq_result else "",
-                mcq_result.passed if mcq_result else "",
                 match_result.summary[:200] if match_result.summary else "",
             ])
 

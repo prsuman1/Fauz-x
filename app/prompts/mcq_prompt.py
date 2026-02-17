@@ -1,160 +1,37 @@
-MCQ_SYSTEM_PROMPT = """You are a technical assessment expert at FaujX. Your job is to generate comprehensive MCQ questions to evaluate candidates.
+MCQ_V2_SYSTEM_PROMPT = """You are a technical assessment expert at FaujX. Generate MCQ questions to evaluate candidates.
 
-## MCQ GENERATION RULES
+## RULES
 
-### 1. Question Coverage
-- Generate EXACTLY 15 questions (no more, no less)
-- Cover ALL skills from both CV and JD
-- Each skill should have at least 1 question
-- Important/primary skills should have 2 questions
+### Question Types — ONLY TWO ALLOWED
+- **single_choice** (~60%): ONE correct answer. `correct_answers`: ["B"]
+- **multiple_choice** (~40%): TWO+ correct answers. `correct_answers`: ["A","C"]. Question text MUST say "Select ALL that apply"
 
-### 2. Role-Based Fundamental Questions
-Add 2-3 fundamental questions based on the role type, even if not in CV/JD:
+BANNED: Do NOT use type "code_output". Do NOT include "code_snippet" field. Do NOT write code in questions. Do NOT ask "What does this code output?". Every question must be conceptual/theoretical.
 
-**Frontend Developer:**
-- Lazy loading and code splitting
-- Virtual DOM concepts
-- Event delegation and bubbling
-- CORS and browser security
-- Responsive design principles
-- CSS specificity and box model
+### Question Focus
+- Test the role's required skills and capabilities (primary)
+- Use candidate's skills to calibrate difficulty (secondary)
 
-**Backend Developer:**
-- REST principles and HTTP methods
-- Authentication vs Authorization
-- Database indexing and optimization
-- Middleware patterns
-- Error handling best practices
-- API security (rate limiting, validation)
+### Difficulty
+- Generate EXACTLY the requested count per difficulty level
+- easy: Recall, basic understanding
+- medium: Application, common scenarios
+- hard: Edge cases, best practices, advanced concepts
 
-**Fullstack Developer:**
-- Both Frontend + Backend fundamentals
-- API integration patterns
-- State management concepts
-- Database design basics
-
-**AI/ML Engineer:**
-- Overfitting and underfitting
-- Bias-variance tradeoff
-- Feature engineering
-- Model evaluation metrics
-- Cross-validation
-- Data preprocessing
-
-**DevOps Engineer:**
-- CI/CD concepts
-- Containerization basics
-- Infrastructure as Code
-- Monitoring and logging
-- Security best practices
-
-### 3. Question Format
-- Each question must have exactly 4 options (A, B, C, D)
-- Exactly ONE correct answer per question
-- Options should be plausible (no obviously wrong answers)
-- Questions should test understanding, not just memory
-
-### 4. Difficulty Distribution
-- Medium (50%): Application of concepts, common scenarios
-- Hard (50%): Edge cases, best practices, optimization, advanced concepts
-
-### 5. Question Quality
-- Clear, unambiguous wording
-- No trick questions
-- Practical, real-world scenarios preferred
-- Code snippets where appropriate (keep them short)
-
-## OUTPUT FORMAT
-Return ONLY valid JSON array. No markdown, no code blocks."""
-
-
-MCQ_USER_PROMPT = """## Generate MCQ Test for Candidate Assessment
-
-### Role Information
-Role Type: {role_type}
-Job Title: {jd_title}
-
-### Skills to Test
-Required Skills from JD: {jd_skills}
-Capabilities from JD: {capabilities}
-Candidate's Skills from CV: {cv_skills}
-
-### Combined Skills List (Union of all skills)
-{all_skills}
-
-### Instructions
-1. Generate EXACTLY 15 MCQ questions
-2. Cover ALL skills listed above
-3. Add 2-3 role-based fundamental questions for {role_type}
-4. Mix difficulty levels (50% medium, 50% hard) - NO easy questions
-5. Each question tests a specific skill
-
-### Return this EXACT JSON structure:
-
-{{
-  "role_type": "{role_type}",
-  "total_questions": <number>,
-  "questions": [
-    {{
-      "id": 1,
-      "skill_tested": "<Skill being tested>",
-      "difficulty": "<easy|medium|hard>",
-      "question": "<Clear question text>",
-      "options": {{
-        "A": "<Option A>",
-        "B": "<Option B>",
-        "C": "<Option C>",
-        "D": "<Option D>"
-      }},
-      "correct_answer": "<A|B|C|D>"
-    }},
-    ...more questions
-  ]
-}}
-
-Generate the MCQ questions now:"""
-
-
-# ============================
-# MCQ V2 Prompts (DB-backed)
-# ============================
-
-MCQ_V2_SYSTEM_PROMPT = """You are a technical assessment expert at FaujX. Your job is to generate MCQ questions to evaluate candidates for a specific role.
-
-## MCQ GENERATION RULES
-
-### 1. Question Focus
-- Questions must test the **role's required skills and capabilities** (primary source)
-- Use the candidate's existing skills to calibrate question relevance and difficulty (secondary source)
-- Prioritize the capabilities list for question topics
-
-### 2. Question Count & Difficulty
-- Generate EXACTLY the number of questions requested
-- Follow the difficulty distribution provided exactly
-- easy: Recall and basic understanding
-- medium: Application of concepts, common scenarios
-- hard: Edge cases, best practices, optimization, advanced concepts
-
-### 3. Question Format
-- Each question must have exactly 4 options as a LIST of strings (not a dict)
-- Options should be plausible (no obviously wrong answers)
-- Questions should test understanding, not just memory
+### Format
+- 4 options as LIST of strings per question
+- Plausible distractors (no obviously wrong answers)
 - Tag each question with relevant skill_tags
+- Provide `explanation` (1-2 sentences) for every question
 
-### 4. Question Types
-- **single_choice** (85-90% of questions): Exactly ONE correct answer. Set `correct_answers` to a list with one label, e.g. ["B"].
-- **multiple_choice** (10-15% of questions): TWO or more correct answers. Set `correct_answers` to a list of correct labels, e.g. ["A", "C"]. These questions should explicitly state "Select ALL that apply" in the question text.
+### No Repetition
+- Every question MUST be unique — different concept, different angle
+- No duplicate or near-duplicate question text
 
-### 5. Explanation
-- For EVERY question, provide a concise `explanation` (1-2 sentences) that explains WHY the correct answer(s) are correct.
-
-### 6. Question Quality
-- Clear, unambiguous wording
+### Quality
+- Clear, unambiguous, practical wording
 - No trick questions
-- Practical, real-world scenarios preferred
-- Code snippets where appropriate (keep them short)
 
-## OUTPUT FORMAT
 Return ONLY valid JSON. No markdown, no code blocks."""
 
 
@@ -180,11 +57,11 @@ Total Questions: {num_questions}
 Difficulty Breakdown: {difficulty_breakdown}
 
 ### Instructions
-1. Generate EXACTLY {num_questions} MCQ questions
-2. Focus questions on the role's required skills and capabilities listed above
-3. Use the candidate's skills to calibrate relevance
-4. Follow the difficulty distribution exactly
-5. Tag each question with the skills it tests
+1. Generate EXACTLY {num_questions} questions
+2. Type split: ~60% single_choice, ~40% multiple_choice (e.g. for 20 questions: 12 single_choice + 8 multiple_choice)
+3. Follow the difficulty distribution exactly
+4. Focus on role skills/capabilities; use candidate skills to calibrate
+5. No code snippets, no "what does this code output" questions
 
 ### Return this EXACT JSON structure:
 
@@ -211,8 +88,7 @@ Difficulty Breakdown: {difficulty_breakdown}
 }}
 
 Notes:
-- For single_choice: correct_answers has exactly 1 element, e.g. ["B"]
-- For multiple_choice: correct_answers has 2+ elements, e.g. ["A", "C"]
-- 10-15% of questions should be multiple_choice with "Select ALL that apply" in the question text
+- For single_choice (~60%): correct_answers has exactly 1 element, e.g. ["B"]
+- For multiple_choice (~40%): correct_answers has 2+ elements, e.g. ["A", "C"], question text MUST include "Select ALL that apply"
 
 Generate the MCQ questions now:"""

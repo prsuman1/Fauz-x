@@ -90,6 +90,10 @@ class LLMClient:
             "max_tokens": max_tokens,
         }
 
+        # Disable thinking/reasoning for Gemini models to reduce latency
+        if model and "gemini" in model.lower():
+            payload["reasoning"] = {"effort": "none"}
+
         last_error = None
 
         for attempt in range(total_keys + 1):

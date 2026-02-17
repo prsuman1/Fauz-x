@@ -6,12 +6,6 @@ from .schemas import (
     EducationAnalysis,
     RiskAssessment,
     MatchResult,
-    MCQQuestion,
-    MCQTest,
-    MCQSubmission,
-    MCQResult,
-    AnalyzeRequest,
-    AnalyzeResponse,
 )
 
 __all__ = [
@@ -22,10 +16,4 @@ __all__ = [
     "EducationAnalysis",
     "RiskAssessment",
     "MatchResult",
-    "MCQQuestion",
-    "MCQTest",
-    "MCQSubmission",
-    "MCQResult",
-    "AnalyzeRequest",
-    "AnalyzeResponse",
 ]
