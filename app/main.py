@@ -70,8 +70,15 @@ async def startup_event():
         print(f"Warning: Database connection failed: {e}")
         print("Non-DB endpoints will still work")
     try:
-        await get_mcq_db_pool()
+        mcq_pool = await get_mcq_db_pool()
         print("MCQ database connection pool initialized")
+        # Create temp coding questions table
+        try:
+            from app.db.temp_coding_queries import ensure_temp_coding_table
+            await ensure_temp_coding_table(mcq_pool)
+            print("Temp coding questions table ready")
+        except Exception as e:
+            print(f"Warning: Could not create temp coding table: {e}")
     except Exception as e:
         print(f"Warning: MCQ database connection failed: {e}")
         print("MCQ generation will not persist to DB")

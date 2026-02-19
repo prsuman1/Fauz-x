@@ -271,6 +271,54 @@ async def get_mcq_answers(request: GetMCQAnswersRequest):
 
 
 # ====================
+# Temp Coding Assignment Endpoints (pre-seeded, for frontend testing)
+# ====================
+
+@router.post("/temp/generate-coding-assignment", response_model=GenerateCodingAssignmentResponse)
+async def temp_generate_coding_assignment(request: GenerateCodingAssignmentRequest):
+    """
+    Generate a coding assignment from pre-seeded questions (no LLM call).
+    Uses the role's job type to pick a relevant question.
+    Response format matches /api/generate-coding-assignment exactly.
+    """
+    from app.services.temp_coding_service import get_temp_coding_service
+
+    try:
+        service = get_temp_coding_service()
+        return await service.generate(request)
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Temp coding assignment generation failed: {str(e)}")
+
+
+@router.post("/temp/evaluate-code", response_model=EvaluateCodeResponse)
+async def temp_evaluate_code(request: EvaluateCodeRequest):
+    """
+    Evaluate code against a pre-seeded temp coding question using real LLM.
+    Response format matches /api/evaluate-code exactly.
+    """
+    from app.services.temp_coding_service import get_temp_coding_service
+
+    try:
+        service = get_temp_coding_service()
+        result, candidate_id = await service.evaluate(request)
+
+        return EvaluateCodeResponse(
+            success=True,
+            candidate_id=candidate_id,
+            evaluation_result=result,
+            total_score=result.overall_score,
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Temp code evaluation failed: {str(e)}")
+
+
+# ====================
 # File Listing Endpoints
 # ====================
 
