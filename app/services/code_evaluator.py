@@ -140,9 +140,7 @@ class CodeEvaluator:
             )
 
         # Determine if passed
-        passed = response.get("passed")
-        if passed is None:
-            passed = overall_score >= self.pass_threshold
+        passed = overall_score >= self.pass_threshold
 
         # Build the result
         return CodeEvaluationResult(

@@ -225,9 +225,7 @@ class TempCodingService:
                 + score_breakdown.performance * 0.10
             )
 
-        passed = response.get("passed")
-        if passed is None:
-            passed = overall_score >= self.pass_threshold
+        passed = overall_score >= self.pass_threshold
 
         return CodeEvaluationResult(
             passed=passed,
