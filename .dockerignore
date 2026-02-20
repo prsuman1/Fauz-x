@@ -1,0 +1,22 @@
+.git/
+.env
+.env.*
+CV/
+JD/
+FaujXDev Dump
+data/
+uploads/
+*.pem
+*.ppk
+*.log
+*.csv
+*.json
+__pycache__/
+*.pyc
+.DS_Store
+venv/
+.pytest_cache/
+notes.txt
+.claude/
+migrate_to_testing.sh
+README.md

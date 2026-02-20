@@ -1,0 +1,11 @@
+services:
+  faujx-staging:
+    build: .
+    container_name: faujx-staging
+    ports:
+      - "9000:9000"
+    env_file:
+      - .env.staging
+    volumes:
+      - ./data/logs:/app/data/logs
+    restart: unless-stopped
